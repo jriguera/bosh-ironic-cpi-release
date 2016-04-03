@@ -1,0 +1,11 @@
+[ironic]
+url="http://ironic.example.org:6385/"
+auth_token=" "
+
+[repository]
+type="dav"
+image_url="http://ironic.example.org/images"
+metadata_url="http://ironic.example.org/metadata"
+username="bosh"
+password="bosh"
+

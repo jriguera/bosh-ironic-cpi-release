@@ -1,0 +1,26 @@
+[ironic]
+url="<%= p("ironic_cpi.ironic_url") %>"
+<% if_p("ironic_cpi.ironic_auth_token") do %>
+auth_token="<%= p("ironic_cpi.ironic_auth_token") %>"
+<% end.else do %>
+auth_username="<%= p("ironic_cpi.ironic_auth_username") %>"
+auth_password="<%= p("ironic_cpi.ironic_auth_password") %>"
+auth_url="<%= p("ironic_cpi.ironic_auth_url") %>"
+auth_domain="<%= p("ironic_cpi.ironic_auth_domain", "default") %>"
+<% if_p("ironic_cpi.ironic_project_name") do %>
+project_name="<%= p("ironic_cpi.ironic_project_name") %>"
+<% end %>
+<% if_p("ironic_cpi.ironic_region_name") do %>
+region_name="<%= p("ironic_cpi.ironic_region_name") %>"
+<% end %>
+<% end %>
+
+
+[repository]
+type="<%= p("ironic_cpi.repository_type") %>"
+image_url="<%= p("ironic_cpi.repository_image_url") %>"
+metadata_url="<%= p("ironic_cpi.repository_metadata_url") %>"
+<% if_p("ironic_cpi.repository_username") do %>
+username="<%= p("ironic_cpi.repository_username") %>"
+password="<%= p("ironic_cpi.repository_password") %>"
+<% end %>

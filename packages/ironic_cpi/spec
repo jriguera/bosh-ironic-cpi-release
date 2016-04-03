@@ -1,0 +1,13 @@
+---
+name: ironic_cpi
+
+dependencies:
+- bzip2
+- zlib
+- openssl
+- libyaml
+- python27
+- setuptools
+
+files:
+- bosh_ironic_cpi/**/*

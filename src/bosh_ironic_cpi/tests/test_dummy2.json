@@ -1,0 +1,7 @@
+{ 
+	"method": "dummy_call2", 
+	"arguments": ["vol-1b7fb8fd"], 
+	"context": { 
+		"director_uuid":"fefb87c8-38d1-46a5-4552-9749d6b1195c"
+	}
+}

@@ -1,0 +1,10 @@
+---
+name: setuptools
+
+dependencies:
+- zlib
+- openssl
+- python27
+
+files:
+- setuptools/setuptools-18.6.1.tar.gz	# https://pypi.python.org/packages/source/s/setuptools/setuptools-18.6.1.tar.gz
