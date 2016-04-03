@@ -1,0 +1,30 @@
+# BOSH resources
+config/dev.yml
+config/private.yml
+config/settings.yml
+releases/*.tgz
+dev_releases
+blobs/*
+.blobs
+.dev_builds
+.vagrant
+.idea
+.final_builds/jobs/**/*.tgz
+.final_builds/packages/**/*.tgz
+
+# Compiled python modules.
+*.pyc
+
+# Setuptools distribution folder.
+/dist/
+
+# Python egg metadata, regenerated from source files by setuptools.
+/*.egg-info
+
+# Other files
+*.swp
+*~
+*#
+#*
+tmp
+my*.yml
