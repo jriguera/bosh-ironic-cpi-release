@@ -44,5 +44,5 @@ done
 
 
 # Invoke CPI
-cmd="${PACKAGES_DIR}/ironic_cpi/bin/cpi -c ${JOBS_DIR}/ironic_cpi/config/cpi.ini"
+cmd="${PACKAGES_DIR}/ironic_cpi/bin/ironic_cpi -c ${JOBS_DIR}/ironic_cpi/config/cpi.ini"
 exec python $cmd <&0
