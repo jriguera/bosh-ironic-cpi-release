@@ -1,0 +1,66 @@
+#!/bin/bash
+set -e
+
+infrastructure=$1; shift
+if !( [ "$infrastructure" == "aws-ec2" ] || \
+      [ "$infrastructure" == "openstack" ] || \
+      [ "$infrastructure" == "warden" ]); then
+  echo "Usage: ./make_manifest <aws-ec2|openstack|warden>"
+  exit 1
+fi
+if ! [ -x "$(command -v spruce)" ]; then
+  echo 'Command spruce is not installed. Please download at https://github.com/geofffranks/spruce/releases' >&2
+  exit 1
+fi
+
+template_prefix="ironic_cpi"
+templates=$(dirname $0)
+tmpdir=$templates/../tmp
+
+STEMCELL_OS=${STEMCELL_OS:-ubuntu}
+BOSH_STATUS=$(bosh status)
+DIRECTOR_UUID=$(echo "$BOSH_STATUS" | grep UUID | awk '{print $2}')
+DIRECTOR_CPI=$(echo "$BOSH_STATUS" | grep CPI | awk '{print $2}' | sed -e 's/_cpi//')
+DIRECTOR_NAME=$(echo "$BOSH_STATUS" | grep Name | awk '{print $2}')
+NAME=$template_prefix-$infrastructure
+
+if [ $infrastructure = "warden" ] && [ $DIRECTOR_CPI != "warden" ]; then
+    echo "Not targeting bosh-lite with warden CPI. Please use 'bosh target' before running this script."
+    exit 1
+fi
+
+if [ $infrastructure = "aws-ec2" ] && [ $DIRECTOR_CPI != "aws" ]; then
+    echo "Not targeting an AWS BOSH. Please use 'bosh target' before running this script."
+    exit 1
+fi
+
+if [ $infrastructure = "openstack" ] && [ $DIRECTOR_CPI != "openstack" ]; then
+    echo "Not targeting an AWS BOSH. Please use 'bosh target' before running this script."
+    exit 1
+fi
+
+function latest_uploaded_stemcell {
+  echo $(bosh stemcells 2>/dev/null | grep bosh | grep $STEMCELL_OS | awk -F'|' '{ print $2, $3 }' | sort -nr -k2 | head -n1 | awk '{ print $1 }')
+}
+
+STEMCELL=${STEMCELL:-$(latest_uploaded_stemcell)}
+if [ "${STEMCELL}x" == "x" ]; then
+  echo "Uploading latest $DIRECTOR_CPI/$STEMCELL_OS stemcell..."
+  STEMCELL_URL=$(bosh public stemcells --full | grep $DIRECTOR_CPI | grep $STEMCELL_OS | sort -nr | head -n1 | awk '{ print $4 }')
+  bosh upload stemcell $STEMCELL_URL
+fi
+STEMCELL=${STEMCELL:-$(latest_uploaded_stemcell)}
+
+mkdir -p $tmpdir
+echo $DIRECTOR_NAME $DIRECTOR_CPI $DIRECTOR_UUID $STEMCELL
+sed -e "s/PLACEHOLDER-DIRECTOR-UUID/$DIRECTOR_UUID/g;s/NAME/$NAME/g;s/STEMCELL/$STEMCELL/g" $templates/stub.yml > $tmpdir/stub-with-uuid.yml
+
+spruce merge --prune meta \
+  $templates/deployment.yml \
+  $templates/jobs.yml \
+  $templates/infrastructure-${infrastructure}.yml \
+  $tmpdir/stub-with-uuid.yml \
+  $* > $tmpdir/$NAME-manifest.yml
+
+bosh deployment $tmpdir/$NAME-manifest.yml
+bosh status

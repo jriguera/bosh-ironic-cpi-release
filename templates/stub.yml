@@ -1,0 +1,14 @@
+---
+meta:
+  environment: NAME
+  dns_root: microbosh
+  security_groups:
+    - ironic_cpi
+  stemcell:
+    name: STEMCELL
+
+director_uuid: PLACEHOLDER-DIRECTOR-UUID
+
+releases:
+  - name: ironic_cpi
+    version: latest

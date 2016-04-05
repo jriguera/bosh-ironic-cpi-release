@@ -1,0 +1,28 @@
+meta:
+  environment: ~
+
+update:
+  canaries: 1
+  max_in_flight: 50
+  canary_watch_time: 1000-30000
+  update_watch_time: 1000-30000
+  serial: false
+
+jobs:
+  - name: ironic_cpi
+    templates:
+      - name: ironic_cpi
+    instances: 1
+    persistent_disk: 0
+    resource_pool: small_z1
+    networks: (( param "please set networks" ))
+
+
+networks: (( param "please set networks" ))
+
+properties:
+  ironic_cpi:
+    ironic_url: "http://ironic:6385/"
+    ironic_auth_token: " "
+    repository_image_url: "http://ironic/images"
+    repository_metadata_url: "http://ironic/metadata"
