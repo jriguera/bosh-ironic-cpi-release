@@ -1,0 +1,13 @@
+---
+name: pip
+
+dependencies:
+- bzip2
+- zlib
+- openssl
+- libyaml
+- python27
+- setuptools
+
+files:
+- pip/pip-8.1.1.tar.gz 		# https://pypi.python.org/packages/source/p/pip/pip-8.1.1.tar.gz

@@ -8,6 +8,7 @@ dependencies:
 - libyaml
 - python27
 - setuptools
+- pip
 
 files:
 - bosh_ironic_cpi/**/*
