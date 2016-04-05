@@ -1,0 +1,41 @@
+keys=root,ironic_cpi,CPIManager
+
+[handlers]
+keys=consoleHandler,file
+
+[formatters]
+keys=simpleFormatter,file
+
+[logger_root]
+handlers=file
+
+[logger_ironic_cpi]
+qualname=ironic_cpi
+handlers=consoleHandler
+
+[logger_CPIManager]
+qualname=CPIManager
+handlers=consoleHandler
+
+[handler_file]
+class=FileHandler
+formatter=file
+<% if_p('ironic_cpi.logging') do |log| %>
+level=<%= log %>
+args=('/var/vcap/sys/log/ironic_cpi.log', 'w')
+<% end.else do %>
+level=ERROR
+args=(os.devnull, 'w')
+<% end %>
+
+[handler_consoleHandler]
+class=StreamHandler
+level=INFO
+formatter=simpleFormatter
+args=(sys.stderr,)
+
+[formatter_file]
+format=%(asctime)s %(name)-12s %(levelname)-8s %(message)s
+
+[formatter_simpleFormatter]
+format=%(name)s: %(message)s

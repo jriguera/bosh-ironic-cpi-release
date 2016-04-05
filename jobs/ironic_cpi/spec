@@ -5,6 +5,7 @@ name: ironic_cpi
 templates:
   bin/cpi.erb: bin/cpi
   config/cpi.ini.erb: config/cpi.ini
+  config/logging.ini.erb: config/logging.ini
 
 
 packages:
@@ -42,6 +43,9 @@ properties:
   ironic_cpi.ironic_region_name:
     description: Region for Keystone authentication
     example: "RegionOne"
+  ironic_cpi.logging:
+    description: Enable log file with the level indicated
+    default: DEBUG
   ironic_cpi.repository_type:
     description: Type of repository to store the images (required) 
     default: dav
