@@ -1,6 +1,6 @@
 # BOSH Ironic CPI Release
 
-This is *work in progress* to create BOSH release for the OpenStack Ironic CPI in
+This is a **work in progress** to create BOSH release for the OpenStack Ironic CPI in
 order to be able to manage physical servers using BOSH
 
 See [Initializing a BOSH environment on OpenStack](https://bosh.io/docs/init-openstack.html)
