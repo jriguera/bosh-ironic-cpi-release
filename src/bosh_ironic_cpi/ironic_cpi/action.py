@@ -24,7 +24,11 @@ class MetaCPIAction(type):
             cls.registry = {}
         else:
             # this is a derived class.  Add cls to the registry
-            cls.registry[name.lower()] = cls
+            # if the class has the protocol attribute
+            try:
+                cls.registry[cls.action] = cls
+            except:
+                pass
         super(MetaCPIAction, cls).__init__(name, bases, dct)
 
     # Metamethods, called on class objects:
