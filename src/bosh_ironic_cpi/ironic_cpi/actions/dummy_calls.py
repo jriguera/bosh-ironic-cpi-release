@@ -12,18 +12,26 @@ from ironic_cpi.action import CPIActionError
 
 
 class Dummy_Call(CPIAction):
+    action = 'dummy_call'
     pass
 
 
 
 class Dummy_Call2(CPIAction):
-    def run(self, args):
+    action = 'dummy_call2'
+
+    def run(self, config):
+        print("----------------")
+        print(config)
+        print("----------------")
+        print(self.args)
+        print("----------------")
         return "dummy2"
 
 
 
 class Dummy_Call3(CPIAction):
-    def run(self, args):
+    def run(self, config):
         msg = "Dummy Error"
         long_msg = "Exception dummy"
         raise CPIActionError(msg, long_msg)
