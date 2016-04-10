@@ -60,11 +60,17 @@ class CPI(object):
             'auth_url': False,
             'cacert': False
         },
-        "repository": {
-            'type': True,
-            'image_url': True,
-            'metadata_url': True,
-            'username': False, 
+        "stemcell": {
+            'repository_type': True,
+            'url': True,
+            'username': False,
+            'password': False,
+            'cacert': False
+        },
+        "metadata": {
+            'repository_type': True,
+            'url': False,
+            'username': False,
             'password': False,
             'cacert': False
         }
