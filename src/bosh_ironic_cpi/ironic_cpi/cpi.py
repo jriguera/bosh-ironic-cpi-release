@@ -56,7 +56,7 @@ class CPI(object):
             'auth_password': False,
             'project_name': False,
             'region_name': False,
-            'auth_domain': False,
+            'auth_domain': True,
             'auth_url': False,
             'cacert': False
         },
@@ -72,7 +72,16 @@ class CPI(object):
             'url': False,
             'username': False,
             'password': False,
-            'cacert': False
+            'cacert': False,
+            'create_files': True
+        },
+        "registry": {
+            'endpoint': True,
+            'url': False,
+            'username': False,
+            'password': False,
+            'nameservers': True,
+            'publickeys': False
         }
     }
 
