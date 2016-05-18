@@ -84,6 +84,7 @@ class WebDav(Repository):
         super(WebDav, self).__init__(config, logger)
         url = urlparse(config['url'])
         self.hosturl = url.netloc
+        self.proto = url.scheme
         self.basepath = url.path
         if not self.basepath.endswith('/'):
             self.basepath += '/'
@@ -106,7 +107,7 @@ class WebDav(Repository):
         path = path.strip()
         if not path.startswith('/'):
             path = self.basepath + path
-        url = self.hosturl + path
+        url = self.proto + "://" + self.hosturl + path
         self.logger.debug("%s: %s" % (method, url))
         response = self.session.request(
             method, url, allow_redirects=False, **kwargs)
