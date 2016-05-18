@@ -1,0 +1,14 @@
+#!/usr/bin/env bash
+
+# abort script on any command that exits with a non zero value
+set -e -x
+
+echo "Extracting cdrkit ... "
+tar xzvf genisoimage/cdrkit-1.1.11.tar.gz
+
+echo "Building genisoimage from cdrkit ... "
+pushd cdrkit-1.1.11
+  make
+  mkdir -p ${BOSH_INSTALL_TARGET}/bin
+  install -m 0755 build/genisoimage/genisoimage ${BOSH_INSTALL_TARGET}/bin
+popd
