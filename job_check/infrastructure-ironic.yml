@@ -1,0 +1,37 @@
+meta:
+  environment: ironic-cpi-warden
+  stemcell:
+    name: bosh-warden-boshlite-ubuntu
+    version: latest
+
+update:
+  canaries: 1
+  max_in_flight: 50
+  canary_watch_time: 1000-30000
+  update_watch_time: 1000-30000
+
+jobs:
+  - name: ironic_cpi
+    instances: 1
+    networks:
+      - name: ironic_cpi
+        static_ips: (( static_ips(0) ))
+
+compilation:
+  cloud_properties:
+    name: random
+
+resource_pools:
+  - name: small_z1
+    cloud_properties:
+      name: random
+
+networks:
+- name: ironic_cpi
+  type: manual
+  subnets:
+  - range: 10.244.8.0/24
+    name: ironic_cpi
+    gateway: 10.244.8.1
+    static:
+      - 10.244.8.2-10.244.8.60
