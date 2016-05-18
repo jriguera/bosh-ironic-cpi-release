@@ -1,34 +1,53 @@
 [ironic]
 url=<%= p("ironic_cpi.ironic_url") %>
+<% if_p("ironic_cpi.ironic_auth_url") do %>
+auth_url=<%= p("ironic_cpi.ironic_auth_url") %>
+<% end %>
+auth_domain=<%= p("ironic_cpi.ironic_auth_domain") %>
 <% if_p("ironic_cpi.ironic_auth_token") do %>
 auth_token='<%= p("ironic_cpi.ironic_auth_token") %>'
 <% end.else do %>
 auth_username=<%= p("ironic_cpi.ironic_auth_username") %>
 auth_password=<%= p("ironic_cpi.ironic_auth_password") %>
-auth_url=<%= p("ironic_cpi.ironic_auth_url") %>
-auth_domain=<%= p("ironic_cpi.ironic_auth_domain", "default") %>
 <% if_p("ironic_cpi.ironic_project_name") do %>
 project_name=<%= p("ironic_cpi.ironic_project_name") %>
+<% end %>
 <% end %>
 <% if_p("ironic_cpi.ironic_region_name") do %>
 region_name=<%= p("ironic_cpi.ironic_region_name") %>
 <% end %>
-<% end %>
 
 
 [stemcell]
-repository_type=<%= p("ironic_cpi.repostemcell_repository_type") %>
-url=<%= p("ironic_cpi.repostemcell_url") %>
-<% if_p("ironic_cpi.repostemcell_username") do %>
-username=<%= p("ironic_cpi.repostemcell_username") %>"
-password=<%= p("ironic_cpi.repostemcell_password") %>"
+repository_type=<%= p("ironic_cpi.repository_stemcell_type") %>
+url=<%= p("ironic_cpi.repository_stemcell_url") %>
+<% if_p("ironic_cpi.repository_stemcell_username") do %>
+username=<%= p("ironic_cpi.repository_stemcell_username") %>
+password=<%= p("ironic_cpi.repository_stemcell_password") %>
 <% end %>
 
 
 [metadata]
-repository_type=<%= p("ironic_cpi.repometadata_repository_type") %>
-url=<%= p("ironic_cpi.repometadata_url") %>
-<% if_p("ironic_cpi.repometadata_username") do %>
-username=<%= p("ironic_cpi.repometadata_username") %>"
-password=<%= p("ironic_cpi.repometadata_password") %>"
+repository_type=<%= p("ironic_cpi.repository_metadata_type") %>
+url=<%= p("ironic_cpi.repository_metadata_url") %>
+<% if_p("ironic_cpi.repository_metadata_username") do %>
+username=<%= p("ironic_cpi.repository_metadata_username") %>
+password=<%= p("ironic_cpi.repository_metadata_password") %>
 <% end %>
+create_files=<%= p("ironic_cpi.repository_metadata_create_files") %>
+
+
+[registry]
+endpoint=<%= p("ironic_cpi.registry_endpoint") %>
+<% if_p("ironic_cpi.registry_url") do %>
+url=<%= p("ironic_cpi.registry_url") %>
+<% end %>
+<% if_p("ironic_cpi.registry_username") do %>
+username=<%= p("ironic_cpi.registry_username") %>
+password=<%= p("ironic_cpi.registry_password") %>
+<% end %>
+nameservers=<%= p("ironic_cpi.registry_nameservers") %>
+<% if_p("ironic_cpi.registry_publickeys") do %>
+publickeys=<%= p("ironic_cpi.registry_publickeys") %>
+<% end %>
+

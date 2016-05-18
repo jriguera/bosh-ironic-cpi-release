@@ -9,6 +9,7 @@ templates:
 
 
 packages:
+- genisoimage
 - bzip2
 - zlib
 - openssl
@@ -36,7 +37,7 @@ properties:
     example: "bosh"
   ironic_cpi.ironic_auth_domain:
     description: Domain for Keystone authentication
-    example: "default"
+    default: "default"
   ironic_cpi.ironic_project_name:
     description: Project for Keystone authentication
     example: "bosh"
@@ -46,30 +47,51 @@ properties:
   ironic_cpi.logging:
     description: Enable log file with the level indicated
     default: DEBUG
-  ironic_cpi.repostemcell_repository_type:
+  ironic_cpi.repository_stemcell_type:
     description: Type of repository to store the images (required) 
     default: webdav
-  ironic_cpi.repostemcell_url:
+  ironic_cpi.repository_stemcell_url:
     description: Repository URL where images are saved and retrieved 
     example: http://ironic.example.org/images
-  ironic_cpi.repostemcell_username:
+  ironic_cpi.repository_stemcell_username:
     description: Username for repository authentication
     example: "bosh"
-  ironic_cpi.repostemcell_password:
+  ironic_cpi.repository_stemcell_password:
     description: Password for repository authentication
     example: "bosh"
-  ironic_cpi.repometadata_repository_type:
+  ironic_cpi.repository_metadata_type:
     description: Type of repository to store the metadata (required) 
     default: webdav
-  ironic_cpi.repometadata_url:
+  ironic_cpi.repository_metadata_url:
     description: Repository URL where metadata is saved and retrieved 
     example: http://ironic.example.org/images
-  ironic_cpi.repometadata_username:
+  ironic_cpi.repository_metadata_username:
     description: Username for repository authentication
     example: "bosh"
-  ironic_cpi.repometadata_password:
+  ironic_cpi.repository_metadata_password:
     description: Password for repository authentication
     example: "bosh"
+  ironic_cpi.repository_metadata_create_files:
+    description: Create and keep meta_data and user_data files in the repository
+    default: True  
+  ironic_cpi.registry_url:
+    description: Full URL API for registry
+    example: http://admin:admin-password@some-ip:port
+  ironic_cpi.registry_username:
+    description: Username for registry authentication
+    example: "bosh"
+  ironic_cpi.registry_password:
+    description: Password for registry authentication
+    example: "bosh"
+  ironic_cpi.registry_endpoint:
+    description: Full URL for the registry endpoint that may include basic auth credentials
+    example: http://admin:admin-password@some-ip:port
+  ironic_cpi.registry_nameservers:
+    description: Dns nameservers for registry separated by commas
+    default: "8.8.8.8"
+  ironic_cpi.registry_publickeys:
+    description: OpenSSH public keys for registry separated by commas
+    example: "ssh-rsa AAAAB hola@mylaptop.local"
 
   env.http_proxy:
     description: Http proxy to connect to cloud API's
@@ -77,3 +99,4 @@ properties:
     description: Https proxy to connect to cloud API's
   env.no_proxy:
     description: No proxy environment variable
+
