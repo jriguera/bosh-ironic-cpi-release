@@ -31,7 +31,7 @@ check_director_cpi() {
     exit 1
   fi
 }
-case $infrastructure
+case $infrastructure in
   warden)
     check_director_cpi "warden" "BOSH-Lite with warden CPI"
   ;;
