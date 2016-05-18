@@ -43,7 +43,7 @@ setup(
     author_email="jriguera@gmail.com",
     license='MIT',
     packages=find_packages(exclude=['docs', 'tests']),
-    
+
     # Include additional files into the package
     include_package_data=True,
     package_data={'ironic_cpi': ['logging.ini']},
