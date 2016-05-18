@@ -1,16 +1,18 @@
 [ironic]
-url=http://ironic.example.org:6385/
+url=http://localhost:6385/
 auth_token=' '
+auth_domain=default
 
 [stemcell]
 repository_type=webdav
-url=http:http://localhost:8080/images
-username=jose
-password=riguera
+url=http://localhost:8080/images
 
 [metadata]
 repository_type=webdav
-url=http://ironic.example.org/metadata
-username=bosh
-password=bosh
+url=http://localhost:8080/metadata
+create_files=True
+
+[registry]
+endpoint=http://localhost:8080/metadata
+nameservers=8.8.8.8
 

@@ -1,5 +1,5 @@
 [loggers]
-keys=root,ironic_cpi,CPIManager
+keys=root,ironic_cpi,CPIManager,Create_Stemcell,Delete_Stemcell,Create_VM,Delete_VM,Has_VM,Reboot_VM,Set_VM_Metadata,Create_Disk,Delete_Disk,Has_Disk,Attach_Disk,Detach_Disk,Get_Disks
 
 [handlers]
 keys=consoleHandler,file
@@ -8,15 +8,68 @@ keys=consoleHandler,file
 keys=simpleFormatter,file
 
 [logger_root]
+level=INFO
 handlers=file
 
 [logger_ironic_cpi]
 qualname=ironic_cpi
-handlers=consoleHandler
+handlers=consoleHandler,file
+
+[logger_Create_Stemcell]
+qualname=Create_Stemcell
+handlers=consoleHandler,file
+
+[logger_Delete_Stemcell]
+qualname=Delete_Stemcell
+handlers=consoleHandler,file
+
+[logger_Create_VM]
+qualname=Create_VM
+handlers=consoleHandler,file
+
+[logger_Delete_VM]
+qualname=Delete_VM
+handlers=consoleHandler,file
+
+[logger_Has_VM]
+qualname=Has_VM
+handlers=consoleHandler,file
+
+[logger_Reboot_VM]
+qualname=Reboot_VM
+handlers=consoleHandler,file
+
+[logger_Set_VM_Metadata]
+qualname=Set_VM_Metadata
+handlers=consoleHandler,file
+
+[logger_Create_Disk]
+qualname=Create_Disk
+handlers=consoleHandler,file
+
+[logger_Delete_Disk]
+qualname=Delete_Disk
+handlers=consoleHandler,file
+
+[logger_Has_Disk]
+qualname=Has_Disk
+handlers=consoleHandler,file
+
+[logger_Attach_Disk]
+qualname=Attach_Disk
+handlers=consoleHandler,file
+
+[logger_Detach_Disk]
+qualname=Detach_Disk
+handlers=consoleHandler,file
+
+[logger_Get_Disks]
+qualname=Get_Disks
+handlers=consoleHandler,file
 
 [logger_CPIManager]
 qualname=CPIManager
-handlers=consoleHandler
+handlers=consoleHandler,file
 
 [handler_file]
 class=FileHandler
