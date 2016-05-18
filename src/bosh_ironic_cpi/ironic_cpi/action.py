@@ -11,6 +11,29 @@ import json
 
 
 
+class CPIActionSettings(object):
+    _instance = None
+
+    def __new__(cls, *args, **kwargs):
+        # Singleton implementation
+        if not cls._instance:
+            cls._instance = super(CPIActionSettings, cls).__new__(cls, *args, **kwargs)
+        return cls._instance
+
+    def __init__(self):
+        self.configdrive_ext = '.cfgd'
+        self.stemcell_image_ext = '.qcow2'
+        self.stemcell_metadata_ext = '.meta'
+        self.stemcell_image = 'root.img'
+        self.stemcell_id_format = 'stemcell_{os_distro}-{architecture}-{version}'
+        self.server_name = '{job}-{index}'
+        # Sort of timeout for waiting in ironic loops. 30s x 40 is the limit
+        self.ironic_sleep_times = 40
+        self.ironic_sleep_seconds = 30
+        self.disk_default_device = '/dev/sdb'
+
+
+
 class MetaCPIAction(type):
     """
     Metaclass to register automatically all the CPI actions
@@ -52,6 +75,7 @@ class CPIAction(object):
         self.logger = logging.getLogger(self.__class__.__name__)
         self._context = context
         self._args = None
+        self.settings = CPIActionSettings()
 
     def __repr__(self):
         """Representation of the object"""
@@ -110,6 +134,7 @@ class CPIAction(object):
         action_obj.args = params['arguments']
         return action_obj
 
+    # config = configuration file
     def run(self, config):
         pass
 
