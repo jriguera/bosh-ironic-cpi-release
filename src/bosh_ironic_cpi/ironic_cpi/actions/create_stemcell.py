@@ -59,29 +59,26 @@ class Create_Stemcell(CPIAction):
             self.logger.error(long_msg)
             raise CPIActionError(msg, long_msg)
         repository =  self.repository.manage(config['stemcell'])
-        image_id = 'bosh_{0}-{1}-{2}'.format(
-            image_params['os_distro'],
-            image_params['architecture'],
-            image_params['version']
-        )
+        stemcell_id = self.settings.stemcell_id_format.format(**image_params)
+        image_id = stemcell_id + self.settings.stemcell_image_ext
+        image_meta = stemcell_id + self.settings.stemcell_metadata_ext
         tmp_dir = tempfile.mkdtemp('_create_stemcell')
         try:
             self.logger.debug("Extracting '%s' to '%s'" % (image_path, tmp_dir))
             with tarfile.open(image_path, 'r') as tar:
                 tar.extractall(tmp_dir)
-                root_image = os.path.join(tmp_dir, "root.img")
+                root_image = os.path.join(tmp_dir, self.settings.stemcell_image)
                 root_md5 = self.md5(root_image)
                 self.logger.debug("MD5sum(%s): '%s'" % (root_image, root_md5))
-                # Append the md5sum to the image_id
-                image_id = "%s_%s" % (image_id, root_md5)
                 # Send the file to the repository
-                repository.put(root_image,  image_id + '.qcow2')
+                self.logger.debug("Uploading '%s'" % image_id)
+                repository.put(root_image,  image_id)
                 # Create md5 file and append the original name
-                md5_content = '{0} {1}\n'.format(root_md5, image_params['name'])
-                image_md5 = StringIO.StringIO(md5_content)
-                repository.put(image_md5, image_id + '.md5')
+                self.logger.debug("Uploading '%s'" % image_meta)
+                meta_content = '{0} {1}\n'.format(root_md5, image_params['name'])
+                repository.put(StringIO.StringIO(meta_content), image_meta)
         except RepositoryError as e:
-            msg = "Cannot save '%s' in the repository" % image_id
+            msg = "Cannot save '%s' in the repository" % stemcell_id
             long_msg = msg + ': %s' % (e)
             self.logger.error(msg)
             raise CPIActionError(msg, long_msg)
@@ -92,8 +89,7 @@ class Create_Stemcell(CPIAction):
         finally:
             if tmp_dir:
                 shutil.rmtree(tmp_dir)
-        self.logger.debug("Done. Output: '%s'" % image_id)
-        return image_id
-
+        self.logger.debug("Done. Stemcell id: '%s'" % stemcell_id)
+        return stemcell_id
 
 # EOF

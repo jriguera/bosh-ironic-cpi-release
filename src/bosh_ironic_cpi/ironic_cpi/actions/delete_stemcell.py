@@ -27,22 +27,21 @@ class Delete_Stemcell(CPIAction):
     # @param [String] stemcell_id, image UUID of the stemcell to be deleted
     # @return [void]
     def run(self, config):
-        image_id = self.args[0]
+        stemcell_id = self.args[0]
+        image_id = stemcell_id + self.settings.stemcell_image_ext
+        image_meta = stemcell_id + self.settings.stemcell_metadata_ext
         repository =  self.repository.manage(config['stemcell'])
         try:
-            stemcell_id = image_id + '.qcow2'
-            if repository.exists(stemcell_id):
-                repository.delete(stemcell_id)
-            stemcell_md5 = image_id + '.md5'
-            if repository.exists(stemcell_md5):
-                repository.delete(stemcell_md5)  
+            if repository.exists(image_id):
+                repository.delete(image_id)
+            if repository.exists(image_meta):
+                repository.delete(image_meta)  
         except RepositoryError as e:
-            msg = "Cannot delete '%s' from repository" % image_id
-            long_msg = msg + ': %s' % (e)
+            msg = "Cannot delete '%s' from repository" % stemcell_id
+            long_msg = msg + ": %s" % (e)
             self.logger.error(msg)
             raise CPIActionError(msg, long_msg)
-        self.logger.debug("Stemcell '%s' deleted" % image_id)
-
+        self.logger.debug("Stemcell id '%s' deleted" % stemcell_id)
 
 # EOF
 
