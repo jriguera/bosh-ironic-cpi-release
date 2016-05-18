@@ -24,5 +24,7 @@ properties:
   ironic_cpi:
     ironic_url: "http://ironic:6385/"
     ironic_auth_token: " "
-    repository_image_url: "http://ironic/images"
+    repository_stemcell_url: "http://ironic/images"
     repository_metadata_url: "http://ironic/metadata"
+    registry_endpoint: "http://ironic/service"
+
