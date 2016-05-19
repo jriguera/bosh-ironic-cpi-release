@@ -18,6 +18,13 @@ export NO_PROXY=<%= no_proxy %>
 export no_proxy=<%= no_proxy %>
 <% end %>
 
+# create dir for logs
+if [ ! -d "$LOGS_DIR/ironic_cpi" ]; then
+    mkdir $LOGS_DIR/ironic_cpi
+    chmod 0755 $LOGS_DIR/ironic_cpi
+    chown vcap:vcap $LOGS_DIR/ironic_cpi
+fi
+
 # Add all packages' /bin & /sbin into $PATH
 for package_bin_dir in $(ls -d /var/vcap/packages/*/*bin); do
   export PATH=${package_bin_dir}:$PATH

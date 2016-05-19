@@ -76,7 +76,7 @@ class=FileHandler
 formatter=file
 <% if_p('ironic_cpi.logging') do |log| %>
 level=<%= log %>
-args=('/var/vcap/sys/log/ironic_cpi.log', 'w')
+args=('/var/vcap/sys/log/ironic_cpi/ironic_cpi.log', 'w')
 <% end.else do %>
 level=ERROR
 args=(os.devnull, 'w')
