@@ -118,7 +118,7 @@ class Delete_VM(CPIAction):
             msg = "Error deleting metadata of server '%s'" % vm_cid
             long_msg = msg + ": %s" % (e)
             self.logger.error(long_msg)
-            raise CPIActionError(msg, long_msg)            
+            #raise CPIActionError(msg, long_msg)            
         # Delete the node from Ironic
         if delete:
             self.logger.debug("Powering off server '%s'" % vm_cid)
