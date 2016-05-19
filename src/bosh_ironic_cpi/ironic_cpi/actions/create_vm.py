@@ -264,6 +264,13 @@ class Create_VM(CPIAction):
             ironic, node.uuid, image_url, image_md5, configdrive_url,
             agent_id, define)
         # TODO Registry configuration!!!!!!!!!
+        try:
+            ironic.node.set_provision_state(vm_cid, 'active', configdrive_url)
+        except ironic_exception.ClientException as e:
+            msg = "Error provisioning server '%s'" % vm_cid
+            long_msg = msg + ": %s" % (e)
+            self.logger.error(long_msg)
+            raise CPIActionError(msg, long_msg)
         self.logger.info(
             "Server '%s' defined with agent_id '%s'" % (node.uuid, agent_id))
         return node.uuid
