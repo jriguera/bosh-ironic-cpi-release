@@ -99,7 +99,7 @@ class Delete_VM(CPIAction):
                     self.logger.error(long_msg)
                     raise CPIActionError(msg, long_msg)
             except ironic_exception.ClientException as e:
-                msg = "Error performing reboot of server '%s'" % vm_cid
+                msg = "Error performing cleaning of server '%s'" % vm_cid
                 long_msg = msg + ": %s" % (e)
                 self.logger.error(long_msg)
                 raise CPIActionError(msg, long_msg)
