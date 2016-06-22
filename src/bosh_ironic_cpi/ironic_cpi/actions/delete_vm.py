@@ -95,7 +95,7 @@ class Delete_VM(CPIAction):
                 else:
                     msg = "Server '%s' did not become available after %ds"
                     msg = msg % (vm_cid, (self.settings.ironic_sleep_times * ironic_sleep))
-                    long_msg = msg + ": %s" % (e)
+                    long_msg = msg + ": timeout"
                     self.logger.error(long_msg)
                     raise CPIActionError(msg, long_msg)
             except ironic_exception.ClientException as e:
