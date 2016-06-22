@@ -51,8 +51,8 @@ class Delete_VM(CPIAction):
                 repository.delete(configdrive)
                 if config['metadata']['create_files']:
                     try:
-                        repository.delete(vm_cid + '/ec2/latest/user_data.json')
-                        repository.delete(vm_cid + '/ec2/latest/meta_data.json')
+                        repository.delete(vm_cid + '/ec2/latest/user-data.json')
+                        repository.delete(vm_cid + '/ec2/latest/meta-data.json')
                         repository.rmdir(vm_cid)
                     except:
                         pass
@@ -74,10 +74,14 @@ class Delete_VM(CPIAction):
             node = ironic.node.get(vm_cid)
             delete = bool(node.instance_info['bosh_defined'])
         except ironic_exception.ClientException as e:
+            msg = "Error getting server info '%s'" % vm_cid
+            long_msg = msg + ": %s" % (e)
+            self.logger.error(long_msg)
+            raise CPIActionError(msg, long_msg)
+        except:
             msg = "Error getting metadata of server '%s'" % vm_cid
             long_msg = msg + ": %s" % (e)
             self.logger.warning(long_msg)
-            #raise CPIActionError(msg, long_msg)
         if node.provision_state != 'available':
             self.logger.debug("Deleting (cleaning) server '%s'" % vm_cid)
             try:
@@ -118,7 +122,7 @@ class Delete_VM(CPIAction):
             msg = "Error deleting metadata of server '%s'" % vm_cid
             long_msg = msg + ": %s" % (e)
             self.logger.error(long_msg)
-            #raise CPIActionError(msg, long_msg)            
+            #raise CPIActionError(msg, long_msg)
         # Delete the node from Ironic
         if delete:
             self.logger.debug("Powering off server '%s'" % vm_cid)
