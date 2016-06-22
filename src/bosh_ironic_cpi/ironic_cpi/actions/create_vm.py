@@ -12,6 +12,7 @@ import os
 import json
 import StringIO
 import requests
+import time
 try:
     from urllib.parse import urlparse
 except ImportError:
@@ -50,10 +51,10 @@ class Create_VM(CPIAction):
         try:
             if not repository.exists(image_id) or not repository.exists(image_meta):
                 msg = "Cannot find stemcell id '%s'" % stemcell_id
-            	long_msg = msg + ': %s and/or %s not found on repostitory'
-            	long_msg = long_msg % (image_id, image_meta)
-            	self.logger.error(long_msg)
-            	raise CPIActionError(msg, long_msg)
+                long_msg = msg + ': %s and/or %s not found on repostitory'
+                long_msg = long_msg % (image_id, image_meta)
+                self.logger.error(long_msg)
+                raise CPIActionError(msg, long_msg)
             self.logger.debug("Stemcell '%s' found on repository" % stemcell_id)
         except RepositoryError as e:
             msg = "Error accessing '%s' on repository" % stemcell_id
@@ -133,23 +134,23 @@ class Create_VM(CPIAction):
             # user_data.json
             cfgdrive_user_json = json.dumps(configdrive_user_data,
                 indent=4, separators=(',', ': '))
-            user_data_tmp_file = os.path.join(tmp_dir_base,'user_data.json')
+            user_data_tmp_file = os.path.join(tmp_dir_base,'user-data.json')
             with open(user_data_tmp_file, 'w') as outfile:
                 outfile.write(cfgdrive_user_json)
             if config['create_files']:
                 repository.put(
                     StringIO.StringIO(cfgdrive_user_json),
-                    node_uuid + '/ec2/latest/user_data.json')
+                    node_uuid + '/ec2/latest/user-data.json')
             # meta_data.json
             cfgdrive_meta_json = json.dumps(configdrive_meta_data,
                 indent=4, separators=(',', ': '))
-            meta_data_tmp_file = os.path.join(tmp_dir_base,'meta_data.json')
+            meta_data_tmp_file = os.path.join(tmp_dir_base,'meta-data.json')
             with open(meta_data_tmp_file, 'w') as outfile:
                 outfile.write(cfgdrive_meta_json)
             if config['create_files']:
                 repository.put(
                     StringIO.StringIO(cfgdrive_meta_json),
-                    node_uuid + '/ec2/latest/meta_data.json')
+                    node_uuid + '/ec2/latest/meta-data.json')
             # Create it using Ironic utils
             self.logger.debug("Creating configdrive volume")
             configdrive = utils.make_configdrive(tmp_dir)
@@ -263,7 +264,6 @@ class Create_VM(CPIAction):
         self._set_ironic_metadata(
             ironic, node.uuid, image_url, image_md5, configdrive_url,
             agent_id, define)
-        # TODO Registry configuration!!!!!!!!!
         try:
             ironic.node.set_provision_state(node.uuid, 'active', configdrive_url)
         except ironic_exception.ClientException as e:
@@ -273,6 +273,48 @@ class Create_VM(CPIAction):
             raise CPIActionError(msg, long_msg)
         self.logger.info(
             "Server '%s' defined with agent_id '%s'" % (node.uuid, agent_id))
+
+        # TODO Registry configuration!!!!!!!!!
+
+        # Wait until node is active,
+        # active node means that node is being rebooted to
+        # boot using the stemcell and the deploy went well
+        # if it does not wait here, set_vm_metadata will fail
+        # because Ironic cannot set metadata while a vm is
+        # transitioning between states. Another reason is the
+        # Director timeout of 600s waiting for the agent to be
+        # active: a lot of hardware needs more than 600 to
+        # complete the entire process (long time for rebooting
+        # and posts checks)
+        ironic_timer = self.settings.ironic_sleep_times
+        ironic_sleep = self.settings.ironic_sleep_seconds
+        try:
+            while ironic_timer > 0:
+                status = ironic.node.states(node.uuid).provision_state
+                msg = "Server '%s' status '%s'" % (node.uuid, status)
+                self.logger.debug(msg)
+                if status == 'deploy failed':
+                    # failed!
+                    msg = "Error provisioning server '%s'" % node.uuid
+                    long_msg = msg + ": 'deploy failed'. See Ironic logs."
+                    self.logger.error(long_msg)
+                    raise CPIActionError(msg, long_msg)
+                if status == 'active':
+                    # done
+                    break
+                time.sleep(ironic_sleep)
+                ironic_timer -= 1
+            else:
+                msg = "Server '%s' did not become 'active' after %ds"
+                msg = msg % (node.uuid, (self.settings.ironic_sleep_times * ironic_sleep))
+                long_msg = msg + ": timeout"
+                logger.self.error(long_msg)
+                raise CPIActionError(msg, long_msg)
+        except ironic_exception.ClientException as e:
+            msg = "Error activating server '%s'" % node.uuid
+            long_msg = msg + ": %s" % (e)
+            self.logger.error(long_msg)
+            raise CPIActionError(msg, long_msg)
         return node.uuid
 
 # EOF
