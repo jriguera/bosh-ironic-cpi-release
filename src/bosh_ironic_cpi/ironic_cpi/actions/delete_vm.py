@@ -29,6 +29,51 @@ class Delete_VM(CPIAction):
         super(Delete_VM, self).__init__(context)
         self.repository = RepositoryManager(self.logger)
 
+
+    def _delete_ironic_metadata(self, ironic, node_uuid):
+        metadata_items = [
+            {'op': 'remove', 'path': "/instance_info/bosh_defined"},
+            {'op': 'remove', 'path': "/instance_info/image_source"},
+            {'op': 'remove', 'path': "/instance_info/image_checksum"},
+            {'op': 'remove', 'path': "/instance_info/configdrive"},
+            {'op': 'remove', 'path': "/instance_uuid"},
+            {'op': 'remove', 'path': "/name"}
+        ]
+        try:
+            ironic.node.update(node_uuid, metadata_items)
+        except ironic_exception.ClientException as e:
+            msg = "Error deleting metadata of server '%s'" % node_uuid
+            long_msg = msg + ": %s" % (e)
+            self.logger.error(long_msg)
+            #raise CPIActionError(msg, long_msg)
+
+
+    def _delete_configdrive(self, config, node_uuid):
+        self.logger.debug("Deleting configdrive metadata '%s'" % node_uuid)
+        configdrive = node_uuid + self.settings.configdrive_ext
+        repository =  self.repository.manage(config['metadata'])
+        try:
+            if repository.exists(configdrive):
+                repository.delete(configdrive)
+                if config['metadata']['create_files']:
+                    try:
+                        repository.delete(node_uuid + '/ec2/latest/user-data')
+                        repository.delete(node_uuid + '/ec2/latest/meta-data.json')
+                        repository.rmdir(node_uuid)
+                    except:
+                        pass
+                self.logger.info(
+                    "Configdrive metadata '%s' deleted" % node_uuid)
+            else:
+                self.logger.info(
+                    "Configdrive metadata '%s' not found" % node_uuid)
+        except RepositoryError as e:
+            msg = "Error accessing '%s' on repository" % node_uuid
+            long_msg = msg + ": %s" % (e)
+            self.logger.error(long_msg)
+            raise CPIActionError(msg, long_msg)
+
+
     ##
     # Deletes the VM.
     # This method will be called while the VM still has persistent disks 
@@ -39,31 +84,11 @@ class Delete_VM(CPIAction):
     #   returned from create_vm
     def run(self, config):
         vm_cid = self.args[0]
-        # Configdrive metadata repository
-        configdrive = vm_cid + self.settings.configdrive_ext
         # Sort of timeout for waiting in ironic loops. 30s x 40 is the limit
         ironic_timer = self.settings.ironic_sleep_times
         ironic_sleep = self.settings.ironic_sleep_seconds
-        repository =  self.repository.manage(config['metadata'])
-        self.logger.debug("Deleting configdrive metadata '%s'" % vm_cid)
-        try:
-            if repository.exists(configdrive):
-                repository.delete(configdrive)
-                if config['metadata']['create_files']:
-                    try:
-                        repository.delete(vm_cid + '/ec2/latest/user-data.json')
-                        repository.delete(vm_cid + '/ec2/latest/meta-data.json')
-                        repository.rmdir(vm_cid)
-                    except:
-                        pass
-                self.logger.info("Configdrive metadata '%s' deleted" % vm_cid)
-            else:
-                self.logger.info("Configdrive metadata '%s' not found" % vm_cid)
-        except RepositoryError as e:
-            msg = "Error accessing '%s' on repository" % vm_cid
-            long_msg = msg + ": %s" % (e)
-            self.logger.error(long_msg)
-            raise CPIActionError(msg, long_msg)
+        # Configdrive metadata repository
+        self._delete_configdrive(config, vm_cid)
         # Undefine the node in Ironic to make it available
         ironic = Ironic(config['ironic'], self.logger)
         # Retrieve the value from the metadata
@@ -98,7 +123,8 @@ class Delete_VM(CPIAction):
                     ironic_timer -= 1
                 else:
                     msg = "Server '%s' did not become available after %ds"
-                    msg = msg % (vm_cid, (self.settings.ironic_sleep_times * ironic_sleep))
+                    msg = msg % (vm_cid,
+                        (self.settings.ironic_sleep_times * ironic_sleep))
                     long_msg = msg + ": timeout"
                     self.logger.error(long_msg)
                     raise CPIActionError(msg, long_msg)
@@ -108,21 +134,10 @@ class Delete_VM(CPIAction):
                 self.logger.error(long_msg)
                 raise CPIActionError(msg, long_msg)
         # Delete meta definitions
-        metadata_items = [
-            {'op': 'remove', 'path': "/instance_info/bosh_defined"},
-            {'op': 'remove', 'path': "/instance_info/image_source"},
-            {'op': 'remove', 'path': "/instance_info/image_checksum"},
-            {'op': 'remove', 'path': "/instance_info/configdrive"},
-            {'op': 'remove', 'path': "/instance_uuid"},
-            {'op': 'remove', 'path': "/name"}
-        ]
-        try:
-            ironic.node.update(vm_cid, metadata_items)
-        except ironic_exception.ClientException as e:
-            msg = "Error deleting metadata of server '%s'" % vm_cid
-            long_msg = msg + ": %s" % (e)
-            self.logger.error(long_msg)
-            #raise CPIActionError(msg, long_msg)
+        self._delete_ironic_metadata(ironic, vm_cid)
+
+        # TODO delete Registry configuration!!!!!!!!!
+
         # Delete the node from Ironic
         if delete:
             self.logger.debug("Powering off server '%s'" % vm_cid)
