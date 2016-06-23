@@ -100,8 +100,9 @@ class Create_VM(CPIAction):
 
 
     # Define the configdrive
-    def _set_configdrive(self, config, node_uuid, registry, nameserver,
-                         networks=None, public_keys=[]):
+    def _set_configdrive(self, config, node_uuid, registry,
+                         nameservers=[], mac=None, networks=None,
+                         public_keys=[]):
         configdrive_id = node_uuid + self.settings.configdrive_ext
         repository =  self.repository.manage(config)
         # Create the configdrive contents
@@ -119,11 +120,42 @@ class Create_VM(CPIAction):
         # user_data
         configdrive_user_data = {
             'server':   {'name': node_uuid },
-            'dns':      {'nameserver': nameserver},
             'registry': {'endpoint': registry}
         }
+        if nameservers:
+            configdrive_user_data['dns'] = {'nameserver': nameservers}
         if networks:
-            configdrive_user_data['networks'] = networks
+            configdrive_user_data['networks'] = {}
+            for key in networks:
+                provided_net = networks[key]
+                user_data_network = {}
+                if 'ip' in provided_net:
+                    user_data_network['ip'] = provided_net['ip']
+                    user_data_network['netmask'] = provided_net['netmask']
+                    if 'gateway' in provided_net:
+                        user_data_network['gateway'] = provided_net['gateway']
+                    if 'type' in provided_net:
+                        user_data_network['type'] = provided_net['type']
+                    else:
+                        user_data_network['type'] = 'manual'
+                else:
+                    user_data_network['type'] = 'dynamic'
+                    user_data_network['usedhcp'] = True
+                if 'default' in provided_net:
+                    user_data_network['default'] = provided_net['default']
+                else:
+                    user_data_network['default'] = ['dns']
+                if 'dns' in provided_net:
+                    user_data_network['dns'] = provided_net['dns']
+                else:
+                    if nameservers:
+                        user_data_network['dns'] = nameservers
+                if 'mac' in provided_net:
+                    user_data_network['mac'] = provided_net['mac']
+                else:
+                    if mac:
+                        user_data_network['mac'] = mac
+                configdrive_user_data['networks'][key] = user_data_network
         # Create a temp folder
         try:
             tmp_dir = tempfile.mkdtemp('_configdrive')
@@ -131,17 +163,17 @@ class Create_VM(CPIAction):
             os.makedirs(tmp_dir_base)
             if config['create_files']:
                 repository.mkdir(node_uuid + '/ec2/latest')
-            # user_data.json
+            # user-data.json
             cfgdrive_user_json = json.dumps(configdrive_user_data,
                 indent=4, separators=(',', ': '))
-            user_data_tmp_file = os.path.join(tmp_dir_base,'user-data.json')
+            user_data_tmp_file = os.path.join(tmp_dir_base,'user-data')
             with open(user_data_tmp_file, 'w') as outfile:
                 outfile.write(cfgdrive_user_json)
             if config['create_files']:
                 repository.put(
                     StringIO.StringIO(cfgdrive_user_json),
-                    node_uuid + '/ec2/latest/user-data.json')
-            # meta_data.json
+                    node_uuid + '/ec2/latest/user-data')
+            # meta-data.json
             cfgdrive_meta_json = json.dumps(configdrive_meta_data,
                 indent=4, separators=(',', ': '))
             meta_data_tmp_file = os.path.join(tmp_dir_base,'meta-data.json')
@@ -168,7 +200,7 @@ class Create_VM(CPIAction):
             raise CPIActionError(msg, long_msg)
         except Exception as e:
             msg = "%s: %s" % (type(e).__name__, e)
-            self.logger.error(long_msg)
+            self.logger.error(msg)
             raise CPIActionError(msg, msg)
         finally:
             if tmp_dir:
@@ -211,13 +243,14 @@ class Create_VM(CPIAction):
             config['stemcell'], stemcell_id)
         # Get configdrive parameters for registry
         registry = config['registry']['endpoint']
-        nameservers = [ 
-            nameserver.strip() for nameserver in 
+        nameservers = [
+            nameserver.strip() for nameserver in
                 config['registry']['nameservers'].split(',')
         ]
-        publickeys = config['registry'].get('publickeys', [])
-        # Networks (they are not really needed, it will use DCHP from Ironic)
-        networks = config['registry'].get('networks', None)
+        publickeys = [
+            k.strip() for k in
+                config['registry'].get('publickeys', '').split(',')
+        ]
         # Ironic definition
         ironic = Ironic(config['ironic'], self.logger)
         mac = resource_pool['mac']
@@ -258,8 +291,9 @@ class Create_VM(CPIAction):
             self.logger.error(long_msg)
             raise CPIActionError(msg, long_msg)
         # Configdrive
-        configdrive_url = self._set_configdrive(config['metadata'],
-            node.uuid, registry, nameservers, networks, publickeys)
+        configdrive_url = self._set_configdrive(
+            config['metadata'], node.uuid, registry,
+            nameservers, mac, network_spec, publickeys)
         # Define the rest of the metadata
         self._set_ironic_metadata(
             ironic, node.uuid, image_url, image_md5, configdrive_url,
@@ -276,16 +310,14 @@ class Create_VM(CPIAction):
 
         # TODO Registry configuration!!!!!!!!!
 
-        # Wait until node is active,
-        # active node means that node is being rebooted to
-        # boot using the stemcell and the deploy went well
-        # if it does not wait here, set_vm_metadata will fail
-        # because Ironic cannot set metadata while a vm is
-        # transitioning between states. Another reason is the
-        # Director timeout of 600s waiting for the agent to be
-        # active: a lot of hardware needs more than 600 to
-        # complete the entire process (long time for rebooting
-        # and posts checks)
+        # Wait until node is active.
+        # An active node means that node was deployed successfully is being
+        # rebooted to boot using the stemcell. if it does not wait here,
+        # set_vm_metadata will fail because Ironic cannot set metadata while
+        # a server is transitioning between states. Moreover the
+        # Director timeout of 600s waiting for the agent to become active: a
+        # lot of hardware needs more than 600 to complete the entire process
+        # (long time for rebooting and posts checks)
         ironic_timer = self.settings.ironic_sleep_times
         ironic_sleep = self.settings.ironic_sleep_seconds
         try:
@@ -306,7 +338,8 @@ class Create_VM(CPIAction):
                 ironic_timer -= 1
             else:
                 msg = "Server '%s' did not become 'active' after %ds"
-                msg = msg % (node.uuid, (self.settings.ironic_sleep_times * ironic_sleep))
+                msg = msg % (node.uuid,
+                    (self.settings.ironic_sleep_times * ironic_sleep))
                 long_msg = msg + ": timeout"
                 logger.self.error(long_msg)
                 raise CPIActionError(msg, long_msg)
