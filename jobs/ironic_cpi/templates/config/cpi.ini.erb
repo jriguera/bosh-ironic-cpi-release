@@ -18,6 +18,7 @@ region_name=<%= p("ironic_cpi.ironic_region_name") %>
 <% end %>
 
 
+
 [stemcell]
 repository_type=<%= p("ironic_cpi.repository_stemcell_type") %>
 url=<%= p("ironic_cpi.repository_stemcell_url") %>
@@ -25,6 +26,13 @@ url=<%= p("ironic_cpi.repository_stemcell_url") %>
 username=<%= p("ironic_cpi.repository_stemcell_username") %>
 password=<%= p("ironic_cpi.repository_stemcell_password") %>
 <% end %>
+<% if_p("ironic_cpi.repository_stemcell_cacert") do %>
+cacert=<%= p("ironic_cpi.repository_stemcell_cacert") %>
+<% end %>
+<% if_p("ironic_cpi.repository_stemcell_timeout") do %>
+timeout=<%= p("ironic_cpi.repository_stemcell_timeout") %>
+<% end %>
+
 
 
 [metadata]
@@ -34,20 +42,115 @@ url=<%= p("ironic_cpi.repository_metadata_url") %>
 username=<%= p("ironic_cpi.repository_metadata_username") %>
 password=<%= p("ironic_cpi.repository_metadata_password") %>
 <% end %>
+<% if_p("ironic_cpi.repository_metadata_cacert") do %>
+cacert=<%= p("ironic_cpi.repository_metadata_cacert") %>
+<% end %>
+<% if_p("ironic_cpi.repository_metadata_timeout") do %>
+timeout=<%= p("ironic_cpi.repository_metadata_timeout") %>
+<% end %>
 create_files=<%= p("ironic_cpi.repository_metadata_create_files") %>
+<% if_p("ironic_cpi.repository_metadata_publickeys") do %>
+publickeys=<%= p("ironic_cpi.repository_metadata_publickeys") %>
+<% end %>
+<% if_p("ironic_cpi.repository_metadata_nameservers") do %>
+nameservers=<%= p("ironic_cpi.repository_metadata_nameservers") %>
+<% end %>
+
 
 
 [registry]
-endpoint=<%= p("ironic_cpi.registry_endpoint") %>
 <% if_p("ironic_cpi.registry_url") do %>
 url=<%= p("ironic_cpi.registry_url") %>
-<% end %>
 <% if_p("ironic_cpi.registry_username") do %>
 username=<%= p("ironic_cpi.registry_username") %>
-password=<%= p("ironic_cpi.registry_password") %>
+password=<%= p("ironic_cpi.registry_password","") %>
 <% end %>
-nameservers=<%= p("ironic_cpi.registry_nameservers") %>
-<% if_p("ironic_cpi.registry_publickeys") do %>
-publickeys=<%= p("ironic_cpi.registry_publickeys") %>
+<% end.else do %>
+<% if_p("registry.endpoint") do %>
+url=<%= p("registry.endpoint") %>
+<% end.else do %>
+url=http://<%= p("registry.host") %>:<%= p("registry.port") %>
 <% end %>
+<% if_p("registry.username") do %>
+username=<%= p("registry.username") %>
+password=<%= p("registry.password","") %>
+<% end %>
+<% end %>
+<% if_p("ironic_cpi.registry_timeout") do %>
+timeout=<%= p("ironic_cpi.registry_timeout") %>
+<% end.else_if_p("registry.timeout") do %>
+timeout=<%= p("registry.timeout") %>
+<% end %>
+<% if_p("ironic_cpi.registry_cacert") do %>
+cacert=<%= p("ironic_cpi.registry_cacert") %>
+<% end.else_if_p("registry.cacert") do %>
+cacert=<%= p("registry.cacert") %>
+<% end %>
+
+
+
+[agent]
+<% if_p("agent.mbus") do %>
+mbus=<%= p("agent.mbus") %>
+<% end.else do %>
+mbus=nats://<%= p("nats.user") %>:<%= p("nats.password") %>@<%= p("nats.address") %>:<%= p("nats.port") %>
+<% end %>
+<% if_p("ironic_cpi.ntp") do %>
+ntp=<%= p("ironic_cpi.ntp") %>
+<% end.else do %>
+ntp=<%= p("ntp") %>
+<% end %>
+
+
+
+[blobstore]
+<% if_p("blobstore") do %>
+provider=<%= p('blobstore.provider') %>
+
+<% if_p("blobstore.bucket_name") do' %>
+bucket_name=<%= p('blobstore.bucket_name') %>
+access_key_id=<%= p(['agent.blobstore.access_key_id', 'blobstore.access_key_id']) %>
+secret_access_key=<%= p(['agent.blobstore.secret_access_key', 'blobstore.secret_access_key']) %>
+
+<% if p(['agent.blobstore.use_ssl', 'blobstore.use_ssl'], nil) != nil %>
+use_ssl=<%= p(['agent.blobstore.use_ssl', 'blobstore.use_ssl']) %>
+<% end %>
+<% if p(['agent.blobstore.s3_port', 'blobstore.s3_port'], nil) != nil %>
+port=<%= p(['agent.blobstore.s3_port', 'blobstore.s3_port']) %>
+<% end %>
+<% if p(['agent.blobstore.host', 'blobstore.host'], nil) != nil %>
+host=<%= p(['agent.blobstore.host', 'blobstore.host']) %>
+<% end %>
+<% if p(['agent.blobstore.s3_force_path_style', 'blobstore.s3_force_path_style'], nil) != nil %>
+s3_force_path_style=<%= p(['agent.blobstore.s3_force_path_style', 'blobstore.s3_force_path_style']) %>
+<% end %>
+<% if p(['agent.blobstore.ssl_verify_peer', 'blobstore.ssl_verify_peer'], nil) != nil %>
+ssl_verify_peer=<%= p(['agent.blobstore.ssl_verify_peer', 'blobstore.ssl_verify_peer']) %>
+<% end %>
+<% if p(['agent.blobstore.s3_multipart_threshold', 'blobstore.s3_multipart_threshold'], nil) != nil %>
+s3_multipart_threshold=<%= p(['agent.blobstore.s3_multipart_threshold', 'blobstore.s3_multipart_threshold']) %>
+<% end %>
+<% if p(['agent.blobstore.s3_signature_version', 'blobstore.s3_signature_version'], nil) != nil %>
+signature_version=<%= p(['agent.blobstore.s3_signature_version', 'blobstore.s3_signature_version']) %>
+<% end %>
+<% if p(['agent.blobstore.s3_region', 'blobstore.s3_region'], nil) != nil %>
+region=<%= p(['agent.blobstore.s3_region', 'blobstore.s3_region']) %>
+<% end %>
+
+<% end.else do %>
+
+<% if_p('blobstore.path') do %>
+blobstore_path=<%= p('blobstore.path') %>
+<% end %>
+<% if_p(['agent.blobstore.address', 'blobstore.address']) do %>
+endpoint=http://<%= p(['agent.blobstore.address', 'blobstore.address']) %>:<%= p('blobstore.port') %>
+<% if_p('blobstore.agent.user') do %>
+user=<%= p('blobstore.agent.user') %>
+password=<%= p('blobstore.agent.password','') %>
+<% end %>
+<% end %>
+
+<% end %>
+<% end %>
+
 

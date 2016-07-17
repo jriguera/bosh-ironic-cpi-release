@@ -47,6 +47,7 @@ properties:
   ironic_cpi.logging:
     description: Enable log file with the level indicated
     default: DEBUG
+
   ironic_cpi.repository_stemcell_type:
     description: Type of repository to store the images (required) 
     default: webdav
@@ -59,6 +60,11 @@ properties:
   ironic_cpi.repository_stemcell_password:
     description: Password for repository authentication
     example: "bosh"
+  ironic_cpi.repository_stemcell_cacert:
+    description: CA certificate for HTTPS connections
+  ironic_cpi.repository_stemcell_timeout:
+    description: HTTP timeout
+
   ironic_cpi.repository_metadata_type:
     description: Type of repository to store the metadata (required) 
     default: webdav
@@ -71,9 +77,21 @@ properties:
   ironic_cpi.repository_metadata_password:
     description: Password for repository authentication
     example: "bosh"
+  ironic_cpi.repository_metadata_cacert:
+    description: CA certificate for HTTPS connections
+  ironic_cpi.repository_metadata_timeout:
+    description: HTTP timeout
   ironic_cpi.repository_metadata_create_files:
     description: Create and keep meta_data and user_data files in the repository
-    default: True  
+    default: True
+  ironic_cpi.repository_metadata_publickeys:
+    description: List of OpenSSH public keys for configdrive
+    example: "ssh-rsa AAAAB hola@mylaptop.local"
+    default: []
+  ironic_cpi.repository_metadata_nameservers:
+    description: List of default nameservers for configdrive
+    default: []
+
   ironic_cpi.registry_url:
     description: Full URL API for registry
     example: http://admin:admin-password@some-ip:port
@@ -83,15 +101,107 @@ properties:
   ironic_cpi.registry_password:
     description: Password for registry authentication
     example: "bosh"
-  ironic_cpi.registry_endpoint:
+  ironic_cpi.registry_cacert:
+    description: CA certificate for HTTPS connections
+  ironic_cpi.registry_timeout:
+    description: HTTP timeout
+
+  registry.host:
+    description: Address of the Registry to connect to (required)
+  registry.port:
+    description: Port of the Registry for CPI and agent to connect to
+    default: 25777
+  registry.username:
+    description: Username to access the Registry
+  registry.password:
+    description: Password to access the Registry
+  registry.endpoint:
     description: Full URL for the registry endpoint that may include basic auth credentials
     example: http://admin:admin-password@some-ip:port
-  ironic_cpi.registry_nameservers:
-    description: Dns nameservers for registry separated by commas
-    default: "8.8.8.8"
-  ironic_cpi.registry_publickeys:
-    description: OpenSSH public keys for registry separated by commas
-    example: "ssh-rsa AAAAB hola@mylaptop.local"
+  ironic_cpi.cacert:
+    description: CA certificate for HTTPS connections
+  ironic_cpi.timeout:
+    description: HTTP timeout
+
+  ntp:
+    description: List of NTP servers
+    default: []
+    example: ["0.us.pool.ntp.org", "1.us.pool.ntp.org"]
+
+  nats.user:
+    description: NATS username used by agent to subscribe to agent requests
+  nats.password:
+    description: NATS password used by agent to subscribe to agent requests
+  nats.address:
+    description: NATS address used by agent to subscribe to agent requests
+  nats.port:
+    description: NATS port used by agent to subscribe to agent requests
+    default: 4222
+
+  blobstore.address:
+    description: Address for agent to connect to blobstore server used by 'simple' blobstore plugin
+  blobstore.port:
+    description: Port for agent to connect to blobstore server used by 'simple' blobstore plugin
+  blobstore.agent.user:
+    description: Username agent uses to connect to blobstore used by 'simple' blobstore plugin
+  blobstore.agent.password:
+    description: Password agent uses to connect to blobstore used by 'simple' blobstore plugin
+  blobstore.provider:
+    description: Provider of the blobstore used by director and agent (simple|local)
+  blobstore.path:
+    description: Path used by 'local' blobstore plugin
+  blobstore.bucket_name:
+    description: S3 Bucket used by s3 blobstore plugin
+  blobstore.access_key_id:
+    description: access_key_id used by s3 blobstore plugin
+  blobstore.secret_access_key:
+    description: secret_access_key used by s3 blobstore plugin
+  blobstore.host:
+    description: Host of blobstore server used by simple blobstore plugin
+  blobstore.s3_region:
+    description: AWS region used by s3 blobstore plugin
+  blobstore.s3_port:
+    description: Port of blobstore server used by s3 blobstore plugin
+    default: 443
+  blobstore.use_ssl:
+    description: Whether the simple blobstore plugin should use SSL to connect to the blobstore server
+    default: true
+  blobstore.ssl_verify_peer:
+    description: Verify the SSL certificate used on the blobstore?
+    default: true
+  blobstore.s3_force_path_style:
+    description: Whether s3 blobstore plugin will always use path style for bucket access
+    default: false
+  blobstore.s3_multipart_threshold:
+    description: Simple blobstore threshold for multipart uploads
+  blobstore.s3_signature_version:
+    description: Signature version used to connect to an s3 blobstore
+
+  agent.blobstore.access_key_id:
+    description: access_key_id for agent used by s3 blobstore plugin
+  agent.blobstore.secret_access_key:
+    description: secret_access_key for agent used by s3 blobstore plugin
+  agent.mbus:
+    description: Message bus endpoint for the agent to start accepting agent requests
+    example: https://user:password@192.168.0.1:5000
+  agent.blobstore.address:
+    description: Address for agent to connect to blobstore server used by simple blobstore plugin
+  agent.blobstore.use_ssl:
+    description: Whether the agent blobstore plugin should use SSL to connect to the blobstore server
+  agent.blobstore.s3_region:
+    description: AWS region for agent used by s3 blobstore plugin
+  agent.blobstore.s3_port:
+    description: Port of agent blobstore server used by s3 blobstore plugin
+  agent.blobstore.host:
+    description: Host of agent blobstore server used by simple blobstore plugin
+  agent.blobstore.s3_force_path_style:
+    description: Whether the agent blobstore plugin will always use path style for bucket access
+  agent.blobstore.ssl_verify_peer:
+    description: Whether the agent blobstore plugin should verify its peer when using SSL
+  agent.blobstore.s3_multipart_threshold:
+    description: Agent blobstore threshold for multipart uploads
+  agent.blobstore.s3_signature_version:
+    description: Signature version used to connect to an s3 blobstore
 
   env.http_proxy:
     description: Http proxy to connect to cloud API's
