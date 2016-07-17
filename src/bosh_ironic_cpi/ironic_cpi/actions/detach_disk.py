@@ -7,6 +7,13 @@ BOSH OpenStack Ironic CPI
 from __future__ import unicode_literals
 
 from ironic_cpi.action import CPIAction
+from ironic_cpi.action import CPIActionError
+from ironic_cpi.actions.ironic import connect as Ironic
+from ironic_cpi.actions.registry.registry import Registry
+from ironic_cpi.actions.registry.registry import RegistryError
+
+# Import ironic exceptions
+from ironicclient import exceptions as ironic_exception
 
 
 
@@ -29,11 +36,55 @@ class Detach_Disk(CPIAction):
     # @param vm_cid [String]: Cloud ID of the VM.
     # @param disk_cid [String]: Cloud ID of the disk.
     def run(self, config):
-        vm_id = self.args[0]
+        vm_cid = self.args[0]
         disk_id = self.args[1]
+        # Decode the device path from the uuid
+        device = disk_id.replace(vm_cid, '/dev', 1).replace('-', '/')
+        ironic = Ironic(config['ironic'], self.logger)
         # Check if disk is for this server (see name format) and if it is in
         # Ironic metadata
-        # TODO: Update registry!!
-        # TODO: Update metadata (for attach_disk and get_disks)
-        self.logger.debug("Detached disk '%s' to server '%s'" % (disk_id, vm_id))
+        disks = []
+        try:
+            node = ironic.node.get(vm_cid)
+            disks = node.instance_info['disks']
+            if disk_id not in disks:
+                msg = "Server '%s' has no attached disk" % (vm_cid)
+                long_msg = msg + ": %s" % (disk_id)
+                self.logger.error(long_msg)
+                raise CPIActionError(msg, long_msg)
+        except ironic_exception.ClientException as e:
+            msg = "Error getting server '%s' metadata disks" % (vm_cid)
+            long_msg = msg + ": %s" % (e)
+            self.logger.error(long_msg)
+            raise CPIActionError(msg, long_msg)
+        # Update registry without the disk
+        try:
+            registry = Registry(config['registry'], vm_cid, self.logger)
+            registry.delete_disk(disk_id)
+        except RegistryError as e:
+            msg = "Cannot create disk registry configuration"
+            long_msg = msg + ": %s" % (e)
+            self.logger.error(long_msg)
+            raise CPIActionError(msg, long_msg)
+        msg = "Removed disk '%s' from server '%s' registry" % (disk_id, vm_cid)
+        self.logger.debug(msg)
+        # Update metadata (for attach_disk and get_disks)
+        disks.remove(disk_id)
+        metadata_item = {
+            'op': "add",
+            'value': disks,
+            'path': "/instance_info/disks"
+        }
+        msg = "Updating disks in server's '%s' metadata" % (vm_cid)
+        self.logger.debug(msg)
+        try:
+            ironic.node.update(vm_cid, [metadata_item])
+        except ironic_exception.ClientException as e:
+            msg = "Error updating server's '%s' disks metadata" % (vm_cid)
+            long_msg = msg + ": %s" % (e)
+            self.logger.error(long_msg)
+            raise CPIActionError(msg, long_msg)
+        msg = "Detached diskid '%s' from server '%s'" % (disk_id, vm_cid)
+        self.logger.debug(msg)
+
 

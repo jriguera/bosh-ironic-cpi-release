@@ -27,7 +27,7 @@ class Has_Disk(CPIAction):
     # @return [Boolean] True if disk is present
     def run(self, config):
         disk_cid = self.args[0]
-        self.logger.debug("Checking disk '%s'" % disk_cid)
+        self.logger.debug("Checking disk '%s'" % (disk_cid))
         # Assuming always True!
         return True
 

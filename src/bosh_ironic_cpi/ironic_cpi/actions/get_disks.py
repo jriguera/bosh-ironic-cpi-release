@@ -7,6 +7,11 @@ BOSH OpenStack Ironic CPI
 from __future__ import unicode_literals
 
 from ironic_cpi.action import CPIAction
+from ironic_cpi.action import CPIActionError
+from ironic_cpi.actions.ironic import connect as Ironic
+
+# Import ironic exceptions
+from ironicclient import exceptions as ironic_exception
 
 
 
@@ -26,7 +31,19 @@ class Get_Disks(CPIAction):
     # @return disk_cids [List]: Array of disk_cids that are currently attached 
     # to the vm.
     def run(self, config):
-        vm_id = self.args[0]
+        vm_cid = self.args[0]
         # TODO: Check Ironic Metadata
-        return []
+        # Update metadata with the disk id (for detach_disk and get_disks)
+        ironic = Ironic(config['ironic'], self.logger)
+        disks = []
+        try:
+            node = ironic.node.get(vm_cid)
+            disks = node.instance_info['disks']
+        except ironic_exception.ClientException as e:
+            msg = "Error getting server metadata disks '%s'" % (vm_cid)
+            long_msg = msg + ": %s" % (e)
+            self.logger.error(long_msg)
+            raise CPIActionError(msg, long_msg)
+        return disks
+
 
