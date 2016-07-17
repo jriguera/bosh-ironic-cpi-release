@@ -43,7 +43,7 @@ class Has_VM(CPIAction):
             self.logger.info("Server '%s' not found in Ironic" % vm_cid)
             return False
         # TODO: Check maintenance status
-	    # Configdrive metadata repository parameters
+        # Configdrive metadata repository parameters
         repository =  self.repository.manage(config['metadata'])
         self.logger.debug("Checking if server configdrive '%s' exists" % vm_cid)
         try:
