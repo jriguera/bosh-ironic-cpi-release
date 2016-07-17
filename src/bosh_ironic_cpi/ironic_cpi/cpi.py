@@ -65,7 +65,8 @@ class CPI(object):
             'url': True,
             'username': False,
             'password': False,
-            'cacert': False
+            'cacert': False,
+            'timeout': False
         },
         "metadata": {
             'repository_type': True,
@@ -73,16 +74,23 @@ class CPI(object):
             'username': False,
             'password': False,
             'cacert': False,
-            'create_files': True
+            'timeout': False,
+            'create_files': True,
+            'publickeys': False,
+            'nameservers': False
         },
         "registry": {
-            'endpoint': True,
-            'url': False,
+            'url': True,
             'username': False,
             'password': False,
-            'nameservers': True,
-            'publickeys': False
-        }
+            'timeout': False,
+            'cacert': False
+        },
+        "agent": {
+            'mbus': True,
+            'ntp': True
+        },
+        "blobstore": {},
     }
 
 
@@ -100,13 +108,13 @@ class CPI(object):
         epilog = __purpose__ + '\n'
         epilog += __version__ + ', ' + __year__ + ' '
         epilog += __author__ + ' ' + __email__
-    	self.parser = argparse.ArgumentParser(
-    	    formatter_class=RawTextHelpFormatter,
-    	    description=__doc__, epilog=epilog)
-    	g1 = self.parser.add_argument_group('Configuration options')
-    	g1.add_argument(
-    	    '-c', '--config', type=str,
-    	    dest='config', default=self.FILE, help="Configuration file")
+        self.parser = argparse.ArgumentParser(
+            formatter_class=RawTextHelpFormatter,
+            description=__doc__, epilog=epilog)
+        g1 = self.parser.add_argument_group('Configuration options')
+        g1.add_argument(
+            '-c', '--config', type=str,
+            dest='config', default=self.FILE, help="Configuration file")
         g1.add_argument(
             'infile', nargs='?', type=argparse.FileType('r'), default=sys.stdin)
         g1.add_argument(
@@ -126,21 +134,21 @@ class CPI(object):
                 logconf = True
         else:
             logging.basicConfig(level=self.LOGLEVEL, format=self.LOGFORMAT)
-    	self.logger = logging.getLogger(self.PROG)
-    	if not logconf:
+        self.logger = logging.getLogger(self.PROG)
+        if not logconf:
             self.logger.info("Using default logging settings")
-    	else:
+        else:
             self.logger.info("Using logging settings from '%s'" % self.logpath)
         return self.logger
 
     def parse_config(self, arguments=None):
         finalconfig = {}
-    	args = self.parser.parse_args(arguments)
+        args = self.parser.parse_args(arguments)
         config = configparser.SafeConfigParser()
         try:
             with open(args.config) as fdconfig:
                 config.readfp(fdconfig) 
-    	except Exception as e:
+        except Exception as e:
             msg = "Ignoring configuration file '%s'"
             self.logger.warn(msg % (args.config))
             for section in self.PARAMETERS.keys():
@@ -149,7 +157,7 @@ class CPI(object):
             self.logger.info("Read configuration file '%s'" % args.config)
         for section in self.PARAMETERS.keys():
             cfgsection = dict(config.items(section))
-    	    for var, required in self.PARAMETERS[section].iteritems():
+            for var, required in self.PARAMETERS[section].iteritems():
                 try:
                     # build env variables like IRONIC_URL
                     envparameter = section.upper() + '_' + var.upper()
