@@ -13,6 +13,7 @@ import json
 import StringIO
 import requests
 import time
+import ast
 try:
     from urllib.parse import urlparse
 except ImportError:
@@ -22,7 +23,10 @@ except ImportError:
 from ironic_cpi.action import CPIAction
 from ironic_cpi.action import CPIActionError
 from ironic_cpi.actions.ironic import connect as Ironic
-
+from ironic_cpi.actions.registry.registry import Registry
+from ironic_cpi.actions.registry.registry import RegistryError
+from ironic_cpi.actions.configdrive.configdrive import Configdrive
+from ironic_cpi.actions.configdrive.configdrive import ConfigdriveError
 from ironic_cpi.actions.repositories.repository import RepositoryManager
 from ironic_cpi.actions.repositories.repository import RepositoryError
 # Import all repository implementations here
@@ -47,7 +51,7 @@ class Create_VM(CPIAction):
         image_id = stemcell_id + self.settings.stemcell_image_ext
         image_meta = stemcell_id + self.settings.stemcell_metadata_ext
         repository =  self.repository.manage(config)
-        self.logger.debug("Checking if stemcell '%s' exists" % stemcell_id)
+        self.logger.debug("Checking if stemcell '%s' exists" % (stemcell_id))
         try:
             if not repository.exists(image_id) or not repository.exists(image_meta):
                 msg = "Cannot find stemcell id '%s'" % stemcell_id
@@ -55,9 +59,10 @@ class Create_VM(CPIAction):
                 long_msg = long_msg % (image_id, image_meta)
                 self.logger.error(long_msg)
                 raise CPIActionError(msg, long_msg)
-            self.logger.debug("Stemcell '%s' found on repository" % stemcell_id)
+            msg = "Stemcell '%s' found on repository" % (stemcell_id)
+            self.logger.debug(msg)
         except RepositoryError as e:
-            msg = "Error accessing '%s' on repository" % stemcell_id
+            msg = "Error accessing '%s' on repository" % (stemcell_id)
             long_msg = msg + ': %s' % (e)
             self.logger.error(long_msg)
             raise CPIActionError(msg, long_msg)
@@ -72,144 +77,109 @@ class Create_VM(CPIAction):
 
 
     # Update instance id in Ironic with the stemcell and other metadata
-    def _set_ironic_metadata(self, ironic, node_uuid, image_url, image_md5,
-                             configdrive_url, agent_id, define):
+    def _set_ironic_metadata(self, ironic, uuid, image_url, image_md5,
+                             configdrive_url, agent_id, defined):
+        self.logger.info("Defining metadata for new server '%s'" % (uuid))
         try:
-            self.logger.info(
-                "Defining metadata for new server '%s'" % node_uuid)
             metadata_items = [
-                {'value': str(define), 'path': "/instance_info/bosh_defined"},
+                {'value': str(defined), 'path': "/instance_info/bosh_defined"},
                 {'value': image_url, 'path': "/instance_info/image_source"},
                 {'value': image_md5, 'path': "/instance_info/image_checksum"},
                 {'value': configdrive_url, 'path': "/instance_info/configdrive"},
+                {'value': [], 'path': "/instance_info/disks"},
                 {'value': agent_id, 'path': "/instance_uuid"}
             ]
             for item in metadata_items:
                 metadata_item = item
                 metadata_item['op'] = "add"
                 try:
-                    ironic.node.update(node_uuid, [metadata_item])
+                    ironic.node.update(uuid, [metadata_item])
                 except:
                     metadata_item['op'] = "replace"
-                    ironic.node.update(node_uuid, [metadata_item])
+                    ironic.node.update(uuid, [metadata_item])
         except ironic_exception.ClientException as e:
-            msg = "Error defining server '%s' on Ironic" % node_uuid
+            msg = "Error defining server '%s' on Ironic" % (uuid)
+            long_msg = msg + ": %s" % (e)
+            self.logger.error(long_msg)
+            raise CPIActionError(msg, long_msg)
+
+
+    # Define the registry configuration
+    def _set_registry(self, ironic, registry, uuid, agent_id, agent, blobs_cfg, 
+                      disks, env, mac=None, certs=None):
+        mbus = agent['mbus']
+        try:
+            ntp = ast.literal_eval(agent.get('ntp', '[]'))
+        except:
+            msg = "Cannot parse ntp as list in agent cpi configuration"
+            self.logger.error(msg)
+            raise CPIActionError(msg, msg)
+        # TODO check with Ironic inspector all disk parameters
+        system_disk = self.settings.disk_system_device
+        # Create blobstore
+        blobstore = {
+            'options': {},
+            'provider': blobs_cfg.get('provider', 'local')
+        }
+        for key in blobs_cfg:
+            if key != 'provider':
+                blobstore['options'][key] = blobs_cfg[key]
+        try:
+            registry.create(
+                agent_id, mbus, ntp, system_disk, blobstore, env, certs)
+            for net in networks:
+                provided_net = networks[net]
+                default_mac = None
+                if 'default' in provided_net:
+                    if 'gateway' in provided_net['default']:
+                        default_mac = mac
+                dhcp = False
+                if 'ip' not in provided_net:
+                    dhcp = True
+                registry.set_network(
+                    net, provided_net, mac=default_mac, dhcp=dhcp)
+        except RegistryError as e:
+            msg = "Cannot create registry configuration"
             long_msg = msg + ": %s" % (e)
             self.logger.error(long_msg)
             raise CPIActionError(msg, long_msg)
 
 
     # Define the configdrive
-    def _set_configdrive(self, config, node_uuid, registry,
-                         nameservers=[], mac=None, networks=None,
-                         public_keys=[]):
-        configdrive_id = node_uuid + self.settings.configdrive_ext
-        repository =  self.repository.manage(config)
-        # Create the configdrive contents
-        # meta_data
-        configdrive_meta_data = {
-            'instance-id': node_uuid,
-            'public-keys': {}
-        }
-        counter = 0
-        for key in public_keys:
-            configdrive_meta_data['public-keys'][str(counter)] = {
-                "openssh-key": key
-            }
-            counter += 1
-        # user_data
-        configdrive_user_data = {
-            'server':   {'name': node_uuid },
-            'registry': {'endpoint': registry}
-        }
-        if nameservers:
-            configdrive_user_data['dns'] = {'nameserver': nameservers}
-        if networks:
-            configdrive_user_data['networks'] = {}
-            for key in networks:
-                provided_net = networks[key]
-                user_data_network = {}
-                if 'ip' in provided_net:
-                    user_data_network['ip'] = provided_net['ip']
-                    user_data_network['netmask'] = provided_net['netmask']
-                    if 'gateway' in provided_net:
-                        user_data_network['gateway'] = provided_net['gateway']
-                    if 'type' in provided_net:
-                        user_data_network['type'] = provided_net['type']
-                    else:
-                        user_data_network['type'] = 'manual'
-                else:
-                    user_data_network['type'] = 'dynamic'
-                    user_data_network['usedhcp'] = True
-                if 'default' in provided_net:
-                    user_data_network['default'] = provided_net['default']
-                else:
-                    user_data_network['default'] = ['dns']
-                if 'dns' in provided_net:
-                    user_data_network['dns'] = provided_net['dns']
-                else:
-                    if nameservers:
-                        user_data_network['dns'] = nameservers
-                if 'mac' in provided_net:
-                    user_data_network['mac'] = provided_net['mac']
-                else:
-                    if mac:
-                        user_data_network['mac'] = mac
-                configdrive_user_data['networks'][key] = user_data_network
-        # Create a temp folder
+    def _set_configdrive(self, config, uuid, registry, networks=None, mac=None):
+        # Get configdrive parameters
+        self.logger.info("Creating configdrive for new server '%s'" % (uuid))
+        registry_url = registry.url
+        create_files = config.get('create_files', '').lower() in ['1', 'yes', 'true']
         try:
-            tmp_dir = tempfile.mkdtemp('_configdrive')
-            tmp_dir_base = os.path.join(tmp_dir,'ec2', 'latest')
-            os.makedirs(tmp_dir_base)
-            if config['create_files']:
-                repository.mkdir(node_uuid + '/ec2/latest')
-            # user-data.json
-            cfgdrive_user_json = json.dumps(configdrive_user_data,
-                indent=4, separators=(',', ': '))
-            user_data_tmp_file = os.path.join(tmp_dir_base,'user-data')
-            with open(user_data_tmp_file, 'w') as outfile:
-                outfile.write(cfgdrive_user_json)
-            if config['create_files']:
-                repository.put(
-                    StringIO.StringIO(cfgdrive_user_json),
-                    node_uuid + '/ec2/latest/user-data')
-            # meta-data.json
-            cfgdrive_meta_json = json.dumps(configdrive_meta_data,
-                indent=4, separators=(',', ': '))
-            meta_data_tmp_file = os.path.join(tmp_dir_base,'meta-data.json')
-            with open(meta_data_tmp_file, 'w') as outfile:
-                outfile.write(cfgdrive_meta_json)
-            if config['create_files']:
-                repository.put(
-                    StringIO.StringIO(cfgdrive_meta_json),
-                    node_uuid + '/ec2/latest/meta-data.json')
-            # Create it using Ironic utils
-            self.logger.debug("Creating configdrive volume")
-            configdrive = utils.make_configdrive(tmp_dir)
-            self.logger.debug("Uploading configdrive to repository")
-            repository.put(StringIO.StringIO(configdrive), configdrive_id)
-        except ironic_exception.ClientException as e:
-            msg = "Error creating configdrive volume"
-            long_msg = msg + ": %s" % (e)
-            self.logger.error(long_msg)
-            raise CPIActionError(msg, long_msg)
-        except RepositoryError as e:
-            msg = "Cannot save '%s' in the metadata repository" % configdrive_id
-            long_msg = msg + ': %s' % (e)
-            self.logger.error(long_msg)
-            raise CPIActionError(msg, long_msg)
+            nameservers = ast.literal_eval(config.get('nameservers', '[]'))
+        except:
+            msg = "Cannot parse nameservers as list in cpi configuration"
+            self.logger.error(msg)
+            raise CPIActionError(msg, msg)
+        try:
+            publickeys = ast.literal_eval(config.get('publickeys', '[]'))
+        except:
+            msg = "Cannot parse publickeys as list in cpi configuration"
+            self.logger.error(msg)
+            raise CPIActionError(msg, msg)
+        # Create configdrive
+        try:
+            repository =  self.repository.manage(config)
+            configdrive = Configdrive(
+                uuid, self.logger, self.settings.configdrive_ext)
+            configdrive.set_meta_data(public_keys)
+            configdrive.set_user_data(registry_url, nameservers, networks, mac)
+            configdrive_id = configdrive.create(repository, create_files)
         except Exception as e:
             msg = "%s: %s" % (type(e).__name__, e)
             self.logger.error(msg)
             raise CPIActionError(msg, msg)
-        finally:
-            if tmp_dir:
-                shutil.rmtree(tmp_dir)
         configdrive_base_url = config['url']
         if not configdrive_base_url.endswith('/'):
             configdrive_base_url += '/'
         configdrive_url = configdrive_base_url + configdrive_id
-        self.logger.info("Configdrive URL %s" % configdrive_url)
+        self.logger.info("Configdrive URL %s" % (configdrive_url))
         return configdrive_url
 
 
@@ -237,26 +207,14 @@ class Create_VM(CPIAction):
         network_spec = self.args[3]
         disk_locality = self.args[4]
         environment = self.args[5]
-
         # Stemcell/image
-        image_url, image_md5 = self._get_stemcell(
-            config['stemcell'], stemcell_id)
-        # Get configdrive parameters for registry
-        registry = config['registry']['endpoint']
-        nameservers = [
-            nameserver.strip() for nameserver in
-                config['registry']['nameservers'].split(',')
-        ]
-        publickeys = [
-            k.strip() for k in
-                config['registry'].get('publickeys', '').split(',')
-        ]
+        image_url, image_md5 = self._get_stemcell(config['stemcell'], stemcell_id)
         # Ironic definition
         ironic = Ironic(config['ironic'], self.logger)
-        mac = resource_pool['mac']
+        mac = resource_pool.get('mac', None)
         define = False
         try:
-            if 'ironic_params' in resource_pool:
+            if mac and 'ironic_params' in resource_pool:
                 # Define the server in Ironic
                 define = True
                 ironic_params = resource_pool['ironic_params']
@@ -275,40 +233,50 @@ class Create_VM(CPIAction):
                     self.logger.error(long_msg)
                     ironic.node.delete(node.uuid)
                     raise CPIActionError(msg, long_msg)
-            else:
+            elif mac:
                 # Get node by MAC
                 try:
                     port = ironic.port.get_by_address(mac)
                     node = ironic.node.get(port.node_uuid)
                 except ironic_exception.ClientException as e:
-                    msg = "Error, server not found with MAC '%s'" % mac
+                    msg = "Error, server not found with MAC '%s'" % (mac)
                     long_msg = msg + ": %s" % (e)
                     self.logger.error(long_msg)
                     raise CPIActionError(msg, long_msg)
+            else:
+                # TODO: Search all defined nodes for one free
+                # TODO Look at inspector data
+                msg = "Not implemented!"
+                long_msg = msg + ": " + "MAC address not defined"
+                self.logger.error(long_msg)
+                raise CPIActionError(msg, long_msg)
         except ironic_exception.ClientException as e:
-            msg = "Error defining server '%s' on Ironic" % node.uuid
+            msg = "Error defining server for agent id '%s' on Ironic" % (agent_id)
             long_msg = msg + ": %s" % (e)
             self.logger.error(long_msg)
             raise CPIActionError(msg, long_msg)
+        # Registry connection configuration
+        registry = Registry(config['registry'], node.uuid, self.logger)
         # Configdrive
         configdrive_url = self._set_configdrive(
-            config['metadata'], node.uuid, registry,
-            nameservers, mac, network_spec, publickeys)
-        # Define the rest of the metadata
+            config['metadata'], node.uuid, registry, network_spec, mac)
+        # Do registry configuration
+        self._set_registry(
+            ironic, registry, node.uuid, agent_id, config['agent'],
+            config['blobstore'], disk_locality, environment, mac)
+        # Define the rest of the metadata in ironic properties
         self._set_ironic_metadata(
             ironic, node.uuid, image_url, image_md5, configdrive_url,
             agent_id, define)
         try:
             ironic.node.set_provision_state(node.uuid, 'active', configdrive_url)
         except ironic_exception.ClientException as e:
-            msg = "Error provisioning server '%s'" % node.uuid
+            msg = "Error provisioning server '%s'" % (node.uuid)
             long_msg = msg + ": %s" % (e)
             self.logger.error(long_msg)
             raise CPIActionError(msg, long_msg)
         self.logger.info(
             "Server '%s' defined with agent_id '%s'" % (node.uuid, agent_id))
-
-        # TODO Registry configuration!!!!!!!!!
 
         # Wait until node is active.
         # An active node means that node was deployed successfully is being
@@ -327,7 +295,7 @@ class Create_VM(CPIAction):
                 self.logger.debug(msg)
                 if status == 'deploy failed':
                     # failed!
-                    msg = "Error provisioning server '%s'" % node.uuid
+                    msg = "Error provisioning server '%s'" % (node.uuid)
                     long_msg = msg + ": 'deploy failed'. See Ironic logs."
                     self.logger.error(long_msg)
                     raise CPIActionError(msg, long_msg)
@@ -344,7 +312,7 @@ class Create_VM(CPIAction):
                 logger.self.error(long_msg)
                 raise CPIActionError(msg, long_msg)
         except ironic_exception.ClientException as e:
-            msg = "Error activating server '%s'" % node.uuid
+            msg = "Error activating server '%s'" % (node.uuid)
             long_msg = msg + ": %s" % (e)
             self.logger.error(long_msg)
             raise CPIActionError(msg, long_msg)
