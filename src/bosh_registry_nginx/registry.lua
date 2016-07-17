@@ -1,5 +1,8 @@
 -- -*- coding: utf-8 -*-
 local JSON = require "JSON"
+JSON.strictTypes = true
+JSON.decodeNumbersAsObjects = true
+JSON.noKeyConversion = true
 
 local registry_base_uri = "/metadata/"
 local request_base_uri = "/registry/"
@@ -59,6 +62,18 @@ local function check(id)
 end
 
 
+local function do_head(id)
+    local logmsg = string.format("Registry  HEAD for id=%s", id)
+    ngx.log(ngx.NOTICE, logmsg)
+    if check(id) then
+        ngx.status = ngx.HTTP_OK
+    else
+        ngx.status = ngx.HTTP_NOT_FOUND
+    end
+    ngx.exit(ngx.HTTP_OK)
+end
+
+
 local function do_post(id)
     -- Creates ID (but no settings)
     local logmsg = string.format("Registry POST for id=%s", id)
@@ -110,13 +125,15 @@ local function do_get(id, param)
         local res = ngx.location.capture(registry_base_uri .. id .. "/settings")
         if res.status == 200 then
             status_value = "ok"
+            -- settings_value = res.body
             settings_value = JSON:decode(res.body)
         else
             status_value = "error"
             settings_value = {}
         end
         local output = { settings = settings_value, status = status_value }
-        local result = JSON:encode_pretty(output)
+        -- local result = JSON:encode_pretty(output)
+        local result = JSON:encode(output, nil, { pretty = true, indent = "  ", null = nil })
         logmsg = string.format("Registry GET for id=%s. Done (status=%s)", id, res.status)
         ngx.log(ngx.NOTICE, logmsg)
         ngx.status = res.status
@@ -132,8 +149,17 @@ end
 local function do_put(id, param)
     -- Put/Update settings
     local logmsg = string.format("Registry PUT for id=%s, params='%s'", id, param)
-    ngx.log(ngx.NOTICE, logmsg)    
-    if check(id) and (param == "settings") then
+    ngx.log(ngx.NOTICE, logmsg)
+    local exists = check(id)
+    -- To make it compatible with
+    -- https://github.com/cloudfoundry/bosh/blob/master/bosh_cpi/lib/bosh/cpi/registry_client.rb
+    -- it has to accept put
+    if ((not exists) and (param == "settings")) then
+        local res = ngx.location.capture(registry_base_uri .. id .. "/", { method = ngx.HTTP_MKCOL })
+        logmsg = string.format("Registry POST for id=%s. Done (status=%s)", id, res.status)
+        ngx.log(ngx.NOTICE, logmsg)
+    end
+    if (param == "settings") then
         -- Internal Redirect with the content to metadata
         logmsg = string.format("Redirecting PUT: %s", registry_base_uri .. id .. "/settings")
         ngx.log(ngx.NOTICE, logmsg)
@@ -168,6 +194,9 @@ if params then
             param = 'settings'
         end
         do_put(id, param)
+    elseif method_name == "HEAD" then
+        -- Check if it exists
+        do_head(id)
     elseif method_name == "POST" then
         -- Create id
         do_post(id)
