@@ -90,7 +90,7 @@ class WebDav(Repository):
             self.basepath += '/'
         username = config.get('username', url.username)
         password = config.get('password', url.password)
-        cert = config.get('cert')
+        cert = config.get('cacert')
         timeout = config.get('timeout')
         self.session = requests.session()
         self.session.stream = True
