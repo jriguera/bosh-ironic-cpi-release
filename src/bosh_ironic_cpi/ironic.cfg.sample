@@ -13,6 +13,14 @@ url=http://localhost:8080/metadata
 create_files=True
 
 [registry]
-endpoint=http://localhost:8080/metadata
-nameservers=8.8.8.8
+url=http://localhost:8080/registry
+
+[agent]
+mbus=nats://nats:natsp@localhost:8000
+ntp=['ntp1', 'ntp2']
+
+[blobstore]
+provider=local
+endpoint=http://localhost:5000
+blobstore_path=/var/vcap/micro_bosh/data/cache
 
