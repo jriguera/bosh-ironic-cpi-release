@@ -33,14 +33,14 @@ def connect(config, logger):
             ironic_kwargs['os_tenant_name'] = config['project_name']
     if 'region_name' in config:
         ironic_kwargs['os_region_name'] = config['region_name']
-	logger.debug("Connecting with Ironic API url: '%s'" % config['url'])
+    logger.debug("Connecting with Ironic API url: '%s'" % config['url'])
     try:
         ironic = ironic_client.get_client(1, **ironic_kwargs)
     except ironic_exception.ClientException as e:
-	    msg = "Error connection Ironic API URL '%s'" % config['url']
-	    long_msg = msg + ': %s' % (e)
-	    logger.error(msg)
-	    raise CPIActionError(msg, long_msg)
+        msg = "Error connection Ironic API URL '%s'" % config['url']
+        long_msg = msg + ': %s' % (e)
+        logger.error(msg)
+        raise CPIActionError(msg, long_msg)
     logger.info("Session created on Ironic API url: '%s'" % config['url'])
     return ironic
 

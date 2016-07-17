@@ -101,7 +101,7 @@ class RepositoryError(Exception):
         self.message = message
 
     def __repr__(self):
-        name = self.__class__.__name__        
+        name = self.__class__.__name__
         show = "<%s (%s)>" % (name, self.message)
         return show
 
