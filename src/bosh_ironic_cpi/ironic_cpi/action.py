@@ -30,7 +30,8 @@ class CPIActionSettings(object):
         # Sort of timeout for waiting in ironic loops. 30s x 40 is the limit
         self.ironic_sleep_times = 40
         self.ironic_sleep_seconds = 30
-        self.disk_default_device = '/dev/sdb'
+        self.disk_system_device = '/dev/sda'
+        self.disk_persistent_device = '/dev/sdb'
 
 
 
