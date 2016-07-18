@@ -125,8 +125,9 @@ local function do_get(id, param)
         local res = ngx.location.capture(registry_base_uri .. id .. "/settings")
         if res.status == 200 then
             status_value = "ok"
-            -- settings_value = res.body
-            settings_value = JSON:decode(res.body)
+            -- Content has to be a string, not JSON
+            -- settings_value = JSON:decode(res.body)
+            settings_value = res.body
         else
             status_value = "error"
             settings_value = {}
