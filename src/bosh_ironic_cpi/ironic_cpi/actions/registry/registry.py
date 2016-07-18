@@ -281,7 +281,7 @@ class Registry(object):
             else:
                 net['type'] = 'manual'
         if dhcp or net['type'] == 'dynamic':
-            net['usedhcp'] = True
+            net['use_dhcp'] = True
             net['type'] = 'dynamic'
         if dns:
             net['dns'] = dns

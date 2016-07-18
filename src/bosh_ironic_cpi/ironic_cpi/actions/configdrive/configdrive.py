@@ -87,7 +87,10 @@ class Configdrive(object):
             else:
                 if 'type' not in provided_net:
                     user_data_network['type'] = 'dynamic'
-                user_data_network['usedhcp'] = True
+                else:
+                    user_data_network['type'] = provided_net['type']
+                if 'use_dhcp' not in provided_net:
+                    user_data_network['use_dhcp'] = True
             if 'default' in provided_net:
                 user_data_network['default'] = provided_net['default']
                 if 'gateway' in provided_net['default']:
