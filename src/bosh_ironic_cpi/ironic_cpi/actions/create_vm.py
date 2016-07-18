@@ -106,7 +106,7 @@ class Create_VM(CPIAction):
 
     # Define the registry configuration
     def _set_registry(self, ironic, registry, uuid, agent_id, agent, blobs_cfg, 
-                      disks, env, mac=None, certs=None):
+                      disks, networks, mac=None, env={}, certs=None):
         mbus = agent['mbus']
         try:
             ntp = ast.literal_eval(agent.get('ntp', '[]'))
@@ -168,7 +168,7 @@ class Create_VM(CPIAction):
             repository =  self.repository.manage(config)
             configdrive = Configdrive(
                 uuid, self.logger, self.settings.configdrive_ext)
-            configdrive.set_meta_data(public_keys)
+            configdrive.set_meta_data(publickeys)
             configdrive.set_user_data(registry_url, nameservers, networks, mac)
             configdrive_id = configdrive.create(repository, create_files)
         except Exception as e:
@@ -263,7 +263,7 @@ class Create_VM(CPIAction):
         # Do registry configuration
         self._set_registry(
             ironic, registry, node.uuid, agent_id, config['agent'],
-            config['blobstore'], disk_locality, environment, mac)
+            config['blobstore'], disk_locality, network_spec, mac, environment)
         # Define the rest of the metadata in ironic properties
         self._set_ironic_metadata(
             ironic, node.uuid, image_url, image_md5, configdrive_url,
@@ -309,7 +309,7 @@ class Create_VM(CPIAction):
                 msg = msg % (node.uuid,
                     (self.settings.ironic_sleep_times * ironic_sleep))
                 long_msg = msg + ": timeout"
-                logger.self.error(long_msg)
+                self.logger.error(long_msg)
                 raise CPIActionError(msg, long_msg)
         except ironic_exception.ClientException as e:
             msg = "Error activating server '%s'" % (node.uuid)
