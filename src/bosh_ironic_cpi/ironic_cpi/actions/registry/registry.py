@@ -223,7 +223,6 @@ class Registry(object):
         try:
             msg = "Doing HTTP PUT '%s': %s" % (self.endpoint, registry)
             self.logger.debug(msg)
-            print(json.dumps(registry))
             req = self.session.put(self.endpoint, data=json.dumps(registry))
         except Exception as e:
             msg = "Exception '%s': %s" % (e.__class__.__name__, str(e))
