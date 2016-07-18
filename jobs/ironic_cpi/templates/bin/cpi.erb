@@ -20,7 +20,7 @@ export no_proxy=<%= no_proxy %>
 
 # create dir for logs
 if [ ! -d "$LOGS_DIR/ironic_cpi" ]; then
-    mkdir $LOGS_DIR/ironic_cpi
+    mkdir -p $LOGS_DIR/ironic_cpi
     chmod 0755 $LOGS_DIR/ironic_cpi
     chown vcap:vcap $LOGS_DIR/ironic_cpi
 fi
