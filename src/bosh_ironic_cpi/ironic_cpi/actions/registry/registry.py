@@ -131,12 +131,11 @@ class Registry(object):
                     msg = "Registry error: %s" % (settings)
                     self.logger.error(msg)
                     raise RegistryError(msg)
-                return settings
+                return json.loads(settings)
             else:
                 msg = "HTTP GET '%s': %s" % (self.endpoint, req.status_code)
                 self.logger.error(msg)
                 raise RegistryError(msg)
-            return settings
         except RegistryError:
             raise
         except Exception as e:
