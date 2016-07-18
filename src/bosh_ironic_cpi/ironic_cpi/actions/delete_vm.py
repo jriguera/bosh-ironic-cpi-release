@@ -48,7 +48,7 @@ class Delete_VM(CPIAction):
         except ironic_exception.ClientException as e:
             msg = "Error deleting metadata of server '%s'" % (node_uuid)
             long_msg = msg + ": %s" % (e)
-            self.logger.error(long_msg)
+            self.logger.warning(long_msg)
             #raise CPIActionError(msg, long_msg)
 
 
@@ -62,8 +62,8 @@ class Delete_VM(CPIAction):
             configdrive.delete(repository, delete_files)
         except Exception as e:
             msg = "%s: %s" % (type(e).__name__, e)
-            self.logger.error(msg)
-            raise CPIActionError(msg, msg)
+            self.logger.warning(msg)
+            #raise CPIActionError(msg, msg)
 
 
     def _delete_registry(self, registry):
@@ -72,8 +72,8 @@ class Delete_VM(CPIAction):
         except RegistryError as e:
             msg = "Cannot delete registry configuration"
             long_msg = msg + ": %s" % (e)
-            self.logger.error(long_msg)
-            raise CPIActionError(msg, long_msg)
+            self.logger.warning(long_msg)
+            #raise CPIActionError(msg, long_msg)
 
 
     ##
@@ -104,10 +104,11 @@ class Delete_VM(CPIAction):
             node = ironic.node.get(vm_cid)
             delete = bool(node.instance_info['bosh_defined'])
         except ironic_exception.ClientException as e:
-            msg = "Error getting server info '%s'" % (vm_cid)
+            msg = "Ignoring error getting server info '%s'" % (vm_cid)
             long_msg = msg + ": %s" % (e)
-            self.logger.error(long_msg)
-            raise CPIActionError(msg, long_msg)
+            self.logger.warning(long_msg)
+            #raise CPIActionError(msg, long_msg)
+            return
         except:
             msg = "Error getting metadata of server '%s'" % (vm_cid)
             long_msg = msg + ": %s" % (e)
