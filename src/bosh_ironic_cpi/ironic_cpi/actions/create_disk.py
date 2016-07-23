@@ -33,13 +33,16 @@ class Create_Disk(CPIAction):
         properties = self.args[1]
         vm_cid = self.args[2]
         # TODO: inspector checks
+        self.logger.debug("Creating disk size %s MiB for server id '%s' with properties: %s" % (size, properties, vm_cid))
         device = self.settings.disk_persistent_device
         if 'device' in properties:
             device = properties['device']
         # Create diskid by encoding the server id. Useful to decode in
         # attach and detach disk functions
-        disk_id = device.replace('/dev', vm_cid, 1).replace('/', '-')
-        self.logger.debug("Created disk '%s'" % disk_id)
+        disk_id = self.settings.encode_disk(device, vm_cid)
+        self.logger.debug("Created disk '%s'" % (disk_id))
         return disk_id
 
+
+# EOF
 

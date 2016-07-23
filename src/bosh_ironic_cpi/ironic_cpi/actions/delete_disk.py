@@ -24,6 +24,8 @@ class Delete_Disk(CPIAction):
     #  returned from create_disk.
     def run(self, config):
         disk_cid = self.args[0]
-        self.logger.debug("Deleted disk '%s'" % disk_cid)
+        self.logger.debug("Deleted disk '%s'" % (disk_cid))
 
+
+# EOF
 

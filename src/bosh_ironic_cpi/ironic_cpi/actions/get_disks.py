@@ -8,7 +8,7 @@ from __future__ import unicode_literals
 
 from ironic_cpi.action import CPIAction
 from ironic_cpi.action import CPIActionError
-from ironic_cpi.actions.ironic import connect as Ironic
+from ironic_cpi.actions.utils.ironic import connect as Ironic
 
 # Import ironic exceptions
 from ironicclient import exceptions as ironic_exception
@@ -32,6 +32,7 @@ class Get_Disks(CPIAction):
     # to the vm.
     def run(self, config):
         vm_cid = self.args[0]
+        self.logger.debug("Getting list of disks for server id '%s'" % (vm_cid))
         # TODO: Check Ironic Metadata
         # Update metadata with the disk id (for detach_disk and get_disks)
         ironic = Ironic(config['ironic'], self.logger)
@@ -40,10 +41,13 @@ class Get_Disks(CPIAction):
             node = ironic.node.get(vm_cid)
             disks = node.instance_info['disks']
         except ironic_exception.ClientException as e:
-            msg = "Error getting server metadata disks '%s'" % (vm_cid)
+            msg = "Error getting server metadata disks for server id '%s'" % (vm_cid)
             long_msg = msg + ": %s" % (e)
             self.logger.error(long_msg)
             raise CPIActionError(msg, long_msg)
+        self.logger.debug("Disks attached to server id '%s': %s" % (vm_cid, disks))
         return disks
 
+
+# EOF
 
