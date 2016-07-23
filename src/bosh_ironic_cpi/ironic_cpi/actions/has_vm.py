@@ -8,8 +8,7 @@ from __future__ import unicode_literals
 
 from ironic_cpi.action import CPIAction
 from ironic_cpi.action import CPIActionError
-from ironic_cpi.actions.ironic import connect as Ironic
-
+from ironic_cpi.actions.utils.ironic import connect as Ironic
 from ironic_cpi.actions.repositories.repository import RepositoryManager
 from ironic_cpi.actions.repositories.repository import RepositoryError
 # Import all repository implementations here
@@ -37,24 +36,34 @@ class Has_VM(CPIAction):
         configdrive = vm_cid + self.settings.configdrive_ext
         # Ironic check
         ironic = Ironic(config['ironic'], self.logger)
-        self.logger.debug("Checking if server '%s' exists in Ironic" % vm_cid)
-        node = ironic.node.get(vm_cid)
+        self.logger.debug("Checking if server '%s' exists in Ironic" % (vm_cid))
+        node = None
+        try:
+            node = ironic.node.get(vm_cid)
+        except ironic_exception.ClientException as e:
+            msg = "Error getting list of servers from Ironic"
+            long_msg = msg + ": %s" % (e)
+            self.logger.error(long_msg)
+            raise CPIActionError(msg, long_msg)
         if not node:
-            self.logger.info("Server '%s' not found in Ironic" % vm_cid)
+            self.logger.info("Server '%s' not found in Ironic" % (vm_cid))
             return False
-        # TODO: Check maintenance status
+        # TODO: Check maintenance status in Ironic
         # Configdrive metadata repository parameters
         repository =  self.repository.manage(config['metadata'])
-        self.logger.debug("Checking if server configdrive '%s' exists" % vm_cid)
+        self.logger.debug("Checking if server configdrive '%s' exists" % (vm_cid))
         try:
             if not repository.exists(configdrive):
-                self.logger.info("Configdrive for server '%s' not found" % vm_cid)
+                self.logger.info("Configdrive for server '%s' not found" % (vm_cid))
                 return False
-            self.logger.debug("Configdrive for server '%s' found" % vm_cid)
+            self.logger.debug("Configdrive for server '%s' found" % (vm_cid))
         except RepositoryError as e:
-            msg = "Error accessing server '%s' metadata configdrive" % vm_cid
+            msg = "Error accessing server '%s' metadata configdrive" % (vm_cid)
             long_msg = msg + ": %s" % (e)
             self.logger.error(long_msg)
             raise CPIActionError(msg, long_msg)
         return True
+
+
+# EOF
 
