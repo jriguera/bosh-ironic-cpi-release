@@ -10,28 +10,7 @@ import logging
 import json
 
 
-
-class CPIActionSettings(object):
-    _instance = None
-
-    def __new__(cls, *args, **kwargs):
-        # Singleton implementation
-        if not cls._instance:
-            cls._instance = super(CPIActionSettings, cls).__new__(cls, *args, **kwargs)
-        return cls._instance
-
-    def __init__(self):
-        self.configdrive_ext = '.cfgd'
-        self.stemcell_image_ext = '.qcow2'
-        self.stemcell_metadata_ext = '.meta'
-        self.stemcell_image = 'root.img'
-        self.stemcell_id_format = 'stemcell_{os_distro}-{architecture}-{version}'
-        self.server_name = '{job}-{index}'
-        # Sort of timeout for waiting in ironic loops. 30s x 40 is the limit
-        self.ironic_sleep_times = 40
-        self.ironic_sleep_seconds = 30
-        self.disk_system_device = '/dev/sda'
-        self.disk_persistent_device = '/dev/sdb'
+from ironic_cpi.settings import CPISettings as CPISettings
 
 
 
@@ -76,7 +55,7 @@ class CPIAction(object):
         self.logger = logging.getLogger(self.__class__.__name__)
         self._context = context
         self._args = None
-        self.settings = CPIActionSettings()
+        self.settings = CPISettings()
 
     def __repr__(self):
         """Representation of the object"""
