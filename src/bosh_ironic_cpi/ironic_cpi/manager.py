@@ -128,6 +128,7 @@ class CPIManager(object):
             msg = "Exception: %s" % e
             self.logger.error(msg)
             raise
+        self.logger.debug(repr(action_obj))
         result.log = "Running CPI method: %s" % action_obj.name
         try:
             result.result = action_obj.run(config)
@@ -135,12 +136,12 @@ class CPIManager(object):
             result.error = e
         except Exception as e:
             msg = str(e)
-            long_msg = "Exception running '%s': %s" % (action_obj.name, msg) 
+            long_msg = "Exception running '%s': %s" % (action_obj.name, msg)
             result.error = CPIActionError(msg, long_msg, str(type(e)))
         else:
             result.log = "%s" % action_obj.name
+        self.logger.debug(repr(result))
         return result
-
 
 # EOF
 
