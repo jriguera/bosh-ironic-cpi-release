@@ -8,7 +8,7 @@ from __future__ import unicode_literals
 
 from ironic_cpi.action import CPIAction
 from ironic_cpi.action import CPIActionError
-from ironic_cpi.actions.ironic import connect as Ironic
+from ironic_cpi.actions.utils.ironic import connect as Ironic
 
 from ironicclient import exceptions as ironic_exception
 
@@ -28,15 +28,16 @@ class Set_VM_Metadata(CPIAction):
     def run(self, config):
         vm_cid = self.args[0]
         meta = self.args[1]
+        self.logger.debug("Setting metadata for server id '%s': %s" % (vm_cid, meta))
         # Ironic
         ironic = Ironic(config['ironic'], self.logger)
         name = self.settings.server_name.format(**meta)
         metadata_items = [
             {'value': name, 'path': "/name"},
             {'value': meta['director'], 'path': "/instance_info/bosh_director"},
-            {'value': meta['deployment'], 'path': "/instance_info/bosh_deployment"}
+            {'value': meta['deployment'], 'path': "/instance_info/bosh_deployment"},
+            {'value': meta['id'], 'path': "/instance_uuid"}
         ]
-        self.logger.debug("Updating server's '%s' metadata" % vm_cid)
         for item in metadata_items:
             metadata_item = item
             metadata_item['op'] = "add"
@@ -47,8 +48,12 @@ class Set_VM_Metadata(CPIAction):
                 try:
                     ironic.node.update(vm_cid, [metadata_item])
                 except ironic_exception.ClientException as e:
-                    msg = "Error updating server's '%s' metadata" % vm_cid
+                    msg = "Error updating server id '%s' metadata" % (vm_cid)
                     long_msg = msg + ": %s" % (e)
                     self.logger.error(long_msg)
                     raise CPIActionError(msg, long_msg)
+        self.logger.debug("Updated server id '%s' metadata: %s" % (vm_cid, metadata_items))
+
+
+# EOF
 
