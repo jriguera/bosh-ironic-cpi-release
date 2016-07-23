@@ -75,7 +75,7 @@ handlers=consoleHandler,file
 class=FileHandler
 level=DEBUG
 formatter=file
-args=(os.devnull, 'w')
+args=(os.devnull, 'a')
 
 [handler_consoleHandler]
 class=StreamHandler
