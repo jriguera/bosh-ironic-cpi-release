@@ -110,41 +110,41 @@ class Create_VM(CPIAction):
             provided_net = network_spec[key]
             network = {}
             mac = None
+            if 'cloud_properties' in provided_net:
+                if 'macs' in provided_net['cloud_properties']:
+                    # Find if some of the macs of this server are asigned to
+                    # the current network
+                    for m in mac_addrs:
+                        if m in provided_net['cloud_properties']['macs']:
+                            mac = m
+                            break
+            if not mac:
+                # It needs an MAC addres so, get the #counter position from 
+                # the original mac list
+                try:
+                    mac = macs[counter]
+                except:
+                    mac = None
             if 'ip' in provided_net:
                 network['ip'] = provided_net['ip']
-                network['netmask'] = provided_net['netmask']
+                network['netmask'] = provided_net.get('netmask', '255.255.255.0')
+                network['type'] = provided_net.get('type', 'manual')
                 if 'gateway' in provided_net:
                     network['gateway'] = provided_net['gateway']
-                if 'type' in provided_net:
-                    network['type'] = provided_net['type']
-                else:
-                    network['type'] = 'manual'
             else:
-                if 'type' not in provided_net:
-                    network['type'] = 'dynamic'
-                else:
-                    network['type'] = provided_net['type']
-                if 'use_dhcp' not in provided_net:
-                    network['use_dhcp'] = True
-            # HACK part
+                network['type'] = provided_net.get('type', 'dynamic')
+                network['use_dhcp'] = provided_net.get('use_dhcp', True)
             if 'default' in provided_net:
-                # HACK !!!!!
+                # HACK!
                 # Collect the MAC addresses from default array
-                # and copy the rest of the parameters
+                # and copy the rest of the parameters. DOES NOT WORK because
+                # of bosh validations
                 network['default'] = []
                 for item in provided_net['default']:
                     if is_macaddr(item):
                         mac = item
                     else:
                         network['default'].append(item)
-            if not mac:
-                # HACK
-                # It needs an MAC addres so, get the #counter from the macs
-                try:
-                    mac = mac_addrs[counter]
-                except:
-                    mac = None
-            counter += 1
             if 'dns' in provided_net:
                 network['dns'] = provided_net['dns']
             else:
@@ -164,18 +164,18 @@ class Create_VM(CPIAction):
             if 'preconfigured' in provided_net:
                 network['preconfigured'] = provided_net['preconfigured']
             networks[key] = network
+            counter += 1
         # HACK!
         # Assign internal loopback IPs to the devices which were not configured
         # otherwise the validation checks of the bosh agent will not pass
         counter = 100
         for mac in mac_addrs:
-            network = {
+            networks[mac.replace(':', '-')] = {
                 'type': "manual",
                 'ip': "127.0.0." + str(counter),
                 'netmask': "255.255.255.0",
-                'mac': mac,
+                'mac': mac
             }
-            networks[mac.replace(':', '-')] = network
             counter += 1
         return networks
 
