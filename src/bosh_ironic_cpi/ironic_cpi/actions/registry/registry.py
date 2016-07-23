@@ -69,7 +69,7 @@ class Registry(object):
         self.uuid = uuid
         if not logger:
             self.logger = logging.getLogger(self.__class__.__name__)
-        self.logger.debug("Initializing registry %s" % self.__class__.__name__)
+        self.logger.debug("Initializing registry %s" % (self.__class__.__name__))
 
 
     @staticmethod
@@ -121,8 +121,7 @@ class Registry(object):
     def read(self):
         settings = None
         try:
-            msg = "Doing HTTP GET '%s'" % (self.endpoint)
-            self.logger.debug(msg)
+            self.logger.debug("Doing HTTP GET '%s'" % (self.endpoint))
             req = self.session.get(self.endpoint)
             if req.status_code == requests.codes.ok:
                 result = req.json()
@@ -139,18 +138,17 @@ class Registry(object):
         except RegistryError:
             raise
         except Exception as e:
-            msg = "Exception '%s': %s" % (e.__class__.__name__, str(e))
+            msg = "Error '%s': %s" % (e.__class__.__name__, str(e))
             self.logger.error(msg)
             raise RegistryError(msg)
 
 
     def push(self, settings):
         try:
-            msg = "Doing HTTP PUT '%s': %s" % (self.endpoint, settings)
-            self.logger.debug(msg)
+            self.logger.debug("Doing HTTP PUT '%s': %s" % (self.endpoint, settings))
             req = self.session.put(self.endpoint, data=json.dumps(settings))
         except Exception as e:
-            msg = "Exception '%s': %s" % (e.__class__.__name__, str(e))
+            msg = "Error '%s': %s" % (e.__class__.__name__, str(e))
             self.logger.error(msg)
             raise RegistryError(msg)
         if req.status_code not in [201, 204]:
@@ -173,11 +171,10 @@ class Registry(object):
 
     def delete(self, delete_uuid=False):
         try:
-            msg = "Doing HTTP DELETE '%s'" % (self.endpoint)
-            self.logger.debug(msg)
+            self.logger.debug("Doing HTTP DELETE '%s'" % (self.endpoint))
             req = self.session.delete(self.endpoint)
         except Exception as e:
-            msg = "Exception '%s': %s" % (e.__class__.__name__, str(e))
+            msg = "Error '%s': %s" % (e.__class__.__name__, str(e))
             self.logger.error(msg)
             raise RegistryError(msg)
         if req.status_code != requests.codes.ok:
@@ -187,11 +184,10 @@ class Registry(object):
         if delete_uuid:
             url = os.path.split(self.endpoint) + "/"
             try:
-                msg = "Doing HTTP DELETE '%s'" % (url)
-                self.logger.debug(msg)
+                self.logger.debug("Doing HTTP DELETE '%s'" % (url))
                 req = self.session.delete(url)
             except Exception as e:
-                msg = "Exception '%s': %s" % (e.__class__.__name__, str(e))
+                msg = "Error '%s': %s" % (e.__class__.__name__, str(e))
                 self.logger.error(msg)
                 raise RegistryError(msg)
             if req.status_code != requests.codes.ok:
@@ -200,8 +196,8 @@ class Registry(object):
                 raise RegistryError(msg)
 
 
-    def create(self, agent_id, mbus, ntp=[], disks_system='/dev/sda',
-               blobstore={}, env={}, certs=None):
+    def create(self, agent_id, mbus, ntp=[], disk_system='/dev/sda',
+               disk_ephemeral='', blobstore={}, env={}, certs=None):
         # Create registry contents
         registry = {
             'agent_id': agent_id,
@@ -209,10 +205,12 @@ class Registry(object):
             'trusted_certs': certs,
             'vm': {
                 'name': self.uuid,
+                'id': self.uuid
             },
             'blobstore': blobstore,
             'disks': {
-                'system': disks_system,
+                'system': disk_system,
+                'ephemeral': disk_ephemeral,
                 'persistent': {}
             },
             'networks': {},
@@ -220,11 +218,10 @@ class Registry(object):
             'env': env,
         }
         try:
-            msg = "Doing HTTP PUT '%s': %s" % (self.endpoint, registry)
-            self.logger.debug(msg)
+            self.logger.debug("Doing HTTP PUT '%s': %s" % (self.endpoint, registry))
             req = self.session.put(self.endpoint, data=json.dumps(registry))
         except Exception as e:
-            msg = "Exception '%s': %s" % (e.__class__.__name__, str(e))
+            msg = "Error '%s': %s" % (e.__class__.__name__, str(e))
             self.logger.error(msg)
             raise RegistryError(msg)
         if req.status_code not in [201, 204]:
@@ -251,15 +248,13 @@ class Registry(object):
             settings['disks'][kind][disk]['host_device_id'] = host
         if fs != None:
             settings['disks'][kind][disk]['file_system_type'] = fs
-        msg = "Updating disks '%s'" % (settings)
-        self.logger.debug(msg)
+        self.logger.debug("Updating disks '%s'" % (settings))
         self.merge(settings)
         return settings
 
 
     def delete_disk(self, disk, kind='persistent'):
-        msg = "Deleting disk '%s' on '%s'" % (disk, self.uuid)
-        self.logger.debug(msg)
+        self.logger.debug("Deleting disk '%s' on '%s'" % (disk, self.uuid))
         settings = self.read()
         try:
             del settings['disks'][kind][disk]
@@ -270,7 +265,7 @@ class Registry(object):
         return self.push(settings)
 
 
-    def set_network(self, name, spec={}, dns=None, mac=None, dhcp=True):
+    def set_network(self, name, spec={}, dns=None, mac=None, dhcp=False):
         settings = {}
         settings['networks'] = {}
         net = copy.deepcopy(spec)
@@ -287,14 +282,12 @@ class Registry(object):
         if mac:
             net['mac'] = mac
         settings['networks'][name] = net
-        msg = "Updating '%s' networks '%s'" % (self.uuid, settings)
-        self.logger.debug(msg)
+        self.logger.debug("Updating '%s' networks '%s'" % (self.uuid, settings))
         return self.merge(settings)
 
 
     def delete_network(self, name):
-        msg = "Deleting network '%s' on '%s'" % (name, self.uuid)
-        self.logger.debug(msg)
+        self.logger.debug("Deleting network '%s' on '%s'" % (name, self.uuid))
         settings = self.read()
         try:
             del settings['networks'][name]
@@ -316,8 +309,7 @@ class Registry(object):
             settings['env']['bosh']['keep_root_password'] = keep_root_password
         if remove_dev_tools != None:
             settings['env']['bosh']['remove_dev_tools'] = remove_dev_tools
-        msg = "Updating bosh env settings '%s'" % (settings)
-        self.logger.debug(msg)
+        self.logger.debug("Updating bosh env settings '%s'" % (settings))
         return self.merge(settings)
 
 
@@ -325,8 +317,7 @@ class Registry(object):
         settings = {}
         settings['env'] = {}
         settings['env']['persistent_disk_fs'] = persistent_disk_fs
-        msg = "Updating bosh env persistent disk fs settings '%s'" % (settings)
-        self.logger.debug(msg)
+        self.logger.debug("Updating bosh env persistent disk fs settings '%s'" % (settings))
         return self.merge(settings)
 
 
