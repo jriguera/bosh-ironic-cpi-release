@@ -41,7 +41,7 @@ class ConfigdriveError(Exception):
 
 class Configdrive(object):
 
-    def __init__(self, node_uuid, logger=None, file_ext='.cfgd'):
+    def __init__(self, node_uuid, file_ext='.cfgd', logger=None):
         self.node_uuid = node_uuid
         self.configdrive_ext = file_ext
         self.meta_data = {'instance-id': self.node_uuid}
@@ -50,7 +50,7 @@ class Configdrive(object):
         self.logger = logger
         if not logger:
             self.logger = logging.getLogger(self.__class__.__name__)
-        self.logger.debug("Initializing class %s" % self.__class__.__name__)
+        self.logger.debug("Initializing class %s" % (self.__class__.__name__))
 
 
     def set_meta_data(self, public_keys=[]):
@@ -63,56 +63,23 @@ class Configdrive(object):
             counter += 1
 
 
-    def set_user_data(self, registry, nameservers=[], networks={}, mac=None):
+    def set_user_data(self, registry, nameservers=[], networks={}):
         # user_data
         self.user_data['registry'] = {'endpoint': registry }
-        self.user_data['networks'] = {}
         if nameservers:
             self.user_data['dns'] = {'nameserver': nameservers}
-        # To asign the MAC to the default network, even if default is not 
-        # present
-        default_gw = len(networks) == 1
-        for key in networks:
-            provided_net = networks[key]
-            user_data_network = {}
-            if 'ip' in provided_net:
-                user_data_network['ip'] = provided_net['ip']
-                user_data_network['netmask'] = provided_net['netmask']
-                if 'gateway' in provided_net:
-                    user_data_network['gateway'] = provided_net['gateway']
-                if 'type' in provided_net:
-                    user_data_network['type'] = provided_net['type']
-                else:
-                    user_data_network['type'] = 'manual'
-            else:
-                if 'type' not in provided_net:
-                    user_data_network['type'] = 'dynamic'
-                else:
-                    user_data_network['type'] = provided_net['type']
-                if 'use_dhcp' not in provided_net:
-                    user_data_network['use_dhcp'] = True
-            if 'default' in provided_net:
-                user_data_network['default'] = provided_net['default']
-                if 'gateway' in provided_net['default']:
-                    default_gw = True
-            if 'dns' in provided_net:
-                user_data_network['dns'] = provided_net['dns']
-            else:
-                if nameservers:
-                    user_data_network['dns'] = nameservers
-            if 'mac' in provided_net:
-                user_data_network['mac'] = provided_net['mac']
-            else:
-                # The MAC address is asigned to the default network (if
-                # default is defined or if there is only one network)
-                if mac and default_gw:
-                    default_gw = False
-                    user_data_network['mac'] = mac
-            self.user_data['networks'][key] = user_data_network
+        if networks:
+            self.user_data['networks'] = networks
+        else:
+            # Create one default dynamic network
+            self.user_data['networks']['default'] = {
+                'type': 'dynamic',
+                'use_dhcp': True
+            }
 
 
     def delete(self, repository, delete_files=True):
-        self.logger.debug("Deleting configdrive metadata '%s'" % self.node_uuid)
+        self.logger.debug("Deleting configdrive metadata '%s'" % (self.node_uuid))
         try:
             if repository.exists(self.configdrive_id):
                 repository.delete(self.configdrive_id)
@@ -124,11 +91,9 @@ class Configdrive(object):
                         repository.rmdir(self.node_uuid)
                     except:
                         pass
-                self.logger.info(
-                    "Configdrive metadata '%s' deleted" % self.node_uuid)
+                self.logger.info("Configdrive metadata '%s' deleted" % (self.node_uuid))
             else:
-                self.logger.info(
-                    "Configdrive metadata '%s' not found" % self.node_uuid)
+                self.logger.info("Configdrive metadata '%s' not found" % (self.node_uuid))
         except RepositoryError as e:
             msg = "Error accessing '%s' on repository: %s" % (self.node_uuid, e)
             self.logger.error(msg)
@@ -173,8 +138,7 @@ class Configdrive(object):
             self.logger.error(msg)
             raise ConfigDriveError(msg)
         except RepositoryError as e:
-            msg = "Cannot save configdrive '%s' in the repository: %s"
-            msg = msg % (self.configdrive_id, e)
+            msg = "Cannot save configdrive '%s' in the repository: %s" % (self.configdrive_id, e)
             self.logger.error(msg)
             raise ConfigDriveError(msg)
         except Exception as e:
@@ -184,8 +148,7 @@ class Configdrive(object):
         finally:
             if tmp_dir:
                 shutil.rmtree(tmp_dir)
-        msg = "Configdrive created with id '%s' in the repository"
-        self.logger.info(msg % self.configdrive_id)
+        self.logger.info("Configdrive created with id '%s' in the repository" % (self.configdrive_id))
         return self.configdrive_id
 
 

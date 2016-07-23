@@ -10,7 +10,8 @@ import time
 
 from ironic_cpi.action import CPIAction
 from ironic_cpi.action import CPIActionError
-from ironic_cpi.actions.ironic import connect as Ironic
+from ironic_cpi.actions.utils.ironic import connect as Ironic
+from ironic_cpi.actions.utils.utils import boolean
 from ironic_cpi.actions.registry.registry import Registry
 from ironic_cpi.actions.registry.registry import RegistryError
 from ironic_cpi.actions.configdrive.configdrive import Configdrive
@@ -34,6 +35,7 @@ class Delete_VM(CPIAction):
 
 
     def _delete_ironic_metadata(self, ironic, node_uuid):
+        self.logger.debug("Deleting metadata on server id '%s'" % (node_uuid))
         metadata_items = [
             {'op': 'remove', 'path': "/instance_info/bosh_defined"},
             {'op': 'remove', 'path': "/instance_info/image_source"},
@@ -43,34 +45,35 @@ class Delete_VM(CPIAction):
             {'op': 'remove', 'path': "/instance_uuid"},
             {'op': 'remove', 'path': "/name"}
         ]
-        try:
-            ironic.node.update(node_uuid, metadata_items)
-        except ironic_exception.ClientException as e:
-            msg = "Error deleting metadata of server '%s'" % (node_uuid)
-            long_msg = msg + ": %s" % (e)
-            self.logger.warning(long_msg)
-            #raise CPIActionError(msg, long_msg)
+        for item in metadata_items:
+            try:
+                ironic.node.update(node_uuid, [item])
+            except ironic_exception.ClientException as e:
+                msg = "Error deleting metadata on server id '%s'" % (node_uuid)
+                long_msg = msg + ": %s" % (e)
+                self.logger.warning(long_msg)
+                # raise CPIActionError(msg, long_msg)
 
 
     def _delete_configdrive(self, config, uuid):
-        self.logger.info("Deleting configdrive for server '%s'" % uuid)
-        delete_files = config.get('create_files', '').lower() in ['1', 'yes', 'true']
+        self.logger.debug("Deleting configdrive for server id '%s'" % (uuid))
+        delete_files = boolean(config.get('create_files', ''))
         try:
             repository =  self.repository.manage(config)
-            configdrive = Configdrive(
-                uuid, self.logger, self.settings.configdrive_ext)
+            configdrive = Configdrive(uuid, self.settings.configdrive_ext)
             configdrive.delete(repository, delete_files)
         except Exception as e:
-            msg = "%s: %s" % (type(e).__name__, e)
+            msg = "Error %s: %s" % (type(e).__name__, e)
             self.logger.warning(msg)
             #raise CPIActionError(msg, msg)
 
 
-    def _delete_registry(self, registry):
+    def _delete_registry(self, registry, uuid):
+        self.logger.debug("Deleting registry for server id '%s'" % (uuid))
         try:
             registry.delete()
         except RegistryError as e:
-            msg = "Cannot delete registry configuration"
+            msg = "Errot deleting registry configuration for server id '%s'" % (uuid)
             long_msg = msg + ": %s" % (e)
             self.logger.warning(long_msg)
             #raise CPIActionError(msg, long_msg)
@@ -89,9 +92,10 @@ class Delete_VM(CPIAction):
         # Sort of timeout for waiting in ironic loops. 30s x 40 is the limit
         ironic_timer = self.settings.ironic_sleep_times
         ironic_sleep = self.settings.ironic_sleep_seconds
+        self.logger.debug("Deleting server id '%s'" % (vm_cid))
         # Delete Registry configuration
-        registry = Registry(config['registry'], vm_cid, self.logger)
-        self._delete_registry(registry)
+        registry = Registry(config['registry'], vm_cid)
+        self._delete_registry(registry, vm_cid)
         # Configdrive metadata repository
         self._delete_configdrive(config['metadata'], vm_cid)
         # Undefine the node in Ironic to make it available
@@ -99,66 +103,65 @@ class Delete_VM(CPIAction):
         # Retrieve the value from the metadata
         clean = None
         delete = False
-        self.logger.debug("Retrieving metadata for server '%s'" % (vm_cid))
+        self.logger.debug("Retrieving metadata for server id '%s'" % (vm_cid))
         try:
             node = ironic.node.get(vm_cid)
-            delete = bool(node.instance_info['bosh_defined'])
+            delete = boolean(node.instance_info['bosh_defined'])
         except ironic_exception.ClientException as e:
-            msg = "Ignoring error getting server info '%s'" % (vm_cid)
+            msg = "Ignoring error while getting server id '%s' info" % (vm_cid)
             long_msg = msg + ": %s" % (e)
             self.logger.warning(long_msg)
             #raise CPIActionError(msg, long_msg)
             return
         except:
-            msg = "Error getting metadata of server '%s'" % (vm_cid)
+            msg = "Error getting metadata 'bosh_defined' on server id '%s'" % (vm_cid)
             long_msg = msg + ": %s" % (e)
             self.logger.warning(long_msg)
+        # Delete meta definitions on Ironic
+        self._delete_ironic_metadata(ironic, vm_cid)
         if node.provision_state != 'available':
-            self.logger.debug("Deleting (cleaning) server '%s'" % (vm_cid))
+            self.logger.debug("Deleting (cleaning) server id '%s'" % (vm_cid))
             try:
                 ironic.node.set_provision_state(vm_cid, 'deleted')
                 while ironic_timer > 0:
                     status = ironic.node.states(vm_cid).provision_state
                     if status == 'available':
-                        msg = "Server '%s' status '%s'" % (vm_cid, status)
-                        self.logger.debug(msg)
+                        self.logger.debug("Server id '%s' status '%s'" % (vm_cid, status))
                         break
-                    msg = "Server '%s' status '%s', waiting" % (vm_cid, status)
-                    self.logger.debug(msg)
+                    self.logger.debug("Server id '%s' status '%s', waiting" % (vm_cid, status))
                     time.sleep(ironic_sleep)
                     ironic_timer -= 1
                 else:
-                    msg = "Server '%s' did not become available after %ds"
-                    msg = msg % (vm_cid,
-                        (self.settings.ironic_sleep_times * ironic_sleep))
-                    long_msg = msg + ": timeout"
+                    msg = "Server id '%s' did not become available after %d s."
+                    msg = msg % (vm_cid, (self.settings.ironic_sleep_times * ironic_sleep))
+                    long_msg = msg + ": Timeout Error"
                     self.logger.error(long_msg)
                     raise CPIActionError(msg, long_msg)
             except ironic_exception.ClientException as e:
-                msg = "Error performing cleaning of server '%s'" % (vm_cid)
+                msg = "Error performing cleaning of server id '%s'" % (vm_cid)
                 long_msg = msg + ": %s" % (e)
                 self.logger.error(long_msg)
                 raise CPIActionError(msg, long_msg)
-        # Delete meta definitions on Ironic
-        self._delete_ironic_metadata(ironic, vm_cid)
         # Delete the node from Ironic
         if delete:
-            self.logger.debug("Powering off server '%s'" % (vm_cid))
+            self.logger.debug("Powering off server id '%s'" % (vm_cid))
             try:
                 ironic.node.set_power_state(vm_cid, 'off')
             except ironic_exception.ClientException as e:
-                msg = "Error powering off server '%s' on Ironic" % (vm_cid)
+                msg = "Error powering off server id '%s' via Ironic" % (vm_cid)
                 long_msg = msg + ": %s" % (e)
                 self.logger.warning(long_msg)
             # Wait 1m
             time.sleep(ironic_sleep * 2)
-            self.logger.debug("Deleting server from Ironic '%s'" % (vm_cid))
+            self.logger.debug("Deleting server id '%s' on Ironic" % (vm_cid))
             try:
                 ironic.node.delete(vm_cid)
             except ironic_exception.ClientException as e:
-                msg = "Error deleting server '%s' on Ironic" % (vm_cid)
+                msg = "Error deleting server id '%s' on Ironic" % (vm_cid)
                 long_msg = msg + ": %s" % (e)
                 self.logger.error(long_msg)
                 raise CPIActionError(msg, long_msg)
 
+
+# EOF
 
