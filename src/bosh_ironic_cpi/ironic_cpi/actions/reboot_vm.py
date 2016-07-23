@@ -10,7 +10,7 @@ import time
 
 from ironic_cpi.action import CPIAction
 from ironic_cpi.action import CPIActionError
-from ironic_cpi.actions.ironic import connect as Ironic
+from ironic_cpi.actions.utils.ironic import connect as Ironic
 
 from ironicclient import exceptions as ironic_exception
 
@@ -27,23 +27,25 @@ class Reboot_VM(CPIAction):
     #   returned from create_vm
     def run(self, config):
         vm_cid = self.args[0]
+        self.logger.debug("Rebooting server id '%s'" % (vm_cid))
         # Connect with Ironic
         ironic = Ironic(config['ironic'], self.logger)
         try:
             status = ironic.node.states(vm_cid).provision_state
-            msg = "Server '%s' status '%s'" % (vm_cid, status)
-            self.logger.debug(msg)
+            self.logger.debug("Server id '%s' status '%s'" % (vm_cid, status))
             if status in ['active', 'available', 'enroll']:
-                self.logger.debug("Rebooting server '%s'" % vm_cid)
+                self.logger.debug("Rebooting server id '%s'" % (vm_cid))
                 node = ironic.node.set_power_state(vm_cid, 'reboot')
             else:
-                self.logger.debug(
-                    "Server '%s' not ready to be rebooted" % vm_cid)
+                self.logger.debug("Server id '%s' not ready to be rebooted" % (vm_cid))
                 # Wait 1 minute
                 time.sleep(60)
         except ironic_exception.ClientException as e:
-            msg = "Error performing reboot of server '%s'" % vm_cid
+            msg = "Error performing reboot of server id '%s'" % (vm_cid)
             long_msg = msg + ": %s" % (e)
             self.logger.error(long_msg)
             raise CPIActionError(msg, long_msg)
+
+
+# EOF
 

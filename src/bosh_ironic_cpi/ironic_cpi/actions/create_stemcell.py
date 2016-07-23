@@ -47,14 +47,14 @@ class Create_Stemcell(CPIAction):
     def run(self, config):
         image_path = self.args[0]
         image_params = self.args[1]
+        self.logger.debug("Creating stemcell with params: %s" % (image_params))
         if image_params['disk_format'] != 'qcow2':
-            msg = "Disk format '%s' unknown!" % image_params['disk_format']
+            msg = "Disk format '%s' unknown!" % (image_params['disk_format'])
             long_msg = "The disk format is not supported, please use 'qcow2'"
             self.logger.error(long_msg)
             raise CPIActionError(msg, long_msg)  
         if image_params['container_format'] != 'bare':
-            msg = "Container format '%s' unknown!"
-            msg = msg % image_params['container_format']
+            msg = "Container format '%s' unknown!" % (image_params['container_format'])
             long_msg = "The container format is not supported, use 'bare'"
             self.logger.error(long_msg)
             raise CPIActionError(msg, long_msg)
@@ -71,14 +71,14 @@ class Create_Stemcell(CPIAction):
                 root_md5 = self.md5(root_image)
                 self.logger.debug("MD5sum(%s): '%s'" % (root_image, root_md5))
                 # Send the file to the repository
-                self.logger.debug("Uploading '%s'" % image_id)
+                self.logger.debug("Uploading image '%s' to repository" % (image_id))
                 repository.put(root_image,  image_id)
                 # Create md5 file and append the original name
-                self.logger.debug("Uploading '%s'" % image_meta)
+                self.logger.debug("Uploading metadata '%s' to repository" % (image_meta))
                 meta_content = '{0} {1}\n'.format(root_md5, image_params['name'])
                 repository.put(StringIO.StringIO(meta_content), image_meta)
         except RepositoryError as e:
-            msg = "Cannot save '%s' in the repository" % stemcell_id
+            msg = "Cannot save '%s' in the repository" % (stemcell_id)
             long_msg = msg + ': %s' % (e)
             self.logger.error(msg)
             raise CPIActionError(msg, long_msg)
@@ -89,7 +89,9 @@ class Create_Stemcell(CPIAction):
         finally:
             if tmp_dir:
                 shutil.rmtree(tmp_dir)
-        self.logger.debug("Done. Stemcell id: '%s'" % stemcell_id)
+        self.logger.debug("Done. Stemcell id: '%s' created" % (stemcell_id))
         return stemcell_id
 
+
 # EOF
+
