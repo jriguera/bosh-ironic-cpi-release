@@ -107,7 +107,7 @@ ntp=<%= p("ntp") %>
 <% if_p("blobstore") do %>
 provider=<%= p('blobstore.provider') %>
 
-<% if_p("blobstore.bucket_name") do' %>
+<% if_p("blobstore.bucket_name") do %>
 bucket_name=<%= p('blobstore.bucket_name') %>
 access_key_id=<%= p(['agent.blobstore.access_key_id', 'blobstore.access_key_id']) %>
 secret_access_key=<%= p(['agent.blobstore.secret_access_key', 'blobstore.secret_access_key']) %>
@@ -142,11 +142,15 @@ region=<%= p(['agent.blobstore.s3_region', 'blobstore.s3_region']) %>
 <% if_p('blobstore.path') do %>
 blobstore_path=<%= p('blobstore.path') %>
 <% end %>
-<% if_p(['agent.blobstore.address', 'blobstore.address']) do %>
-endpoint=http://<%= p(['agent.blobstore.address', 'blobstore.address']) %>:<%= p('blobstore.port') %>
+<% if_p('agent.blobstore.address') do %>
+endpoint=http://<%= p('agent.blobstore.address') %>:<%= p('blobstore.port','80') %>
+<% end.else_if_p('blobstore.address') do %>
+endpoint=http://<%= p('blobstore.address') %>:<%= p('blobstore.port','80') %>
 <% if_p('blobstore.agent.user') do %>
 user=<%= p('blobstore.agent.user') %>
-password=<%= p('blobstore.agent.password','') %>
+<% end %>
+<% if_p('blobstore.agent.password') do %>
+password=<%= p('blobstore.agent.password') %>
 <% end %>
 <% end %>
 
