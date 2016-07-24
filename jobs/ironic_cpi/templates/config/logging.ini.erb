@@ -1,5 +1,6 @@
 [loggers]
-keys=root,ironic_cpi,CPIManager,Create_Stemcell,Delete_Stemcell,Create_VM,Delete_VM,Has_VM,Reboot_VM,Set_VM_Metadata,Create_Disk,Delete_Disk,Has_Disk,Attach_Disk,Detach_Disk,Get_Disks
+keys=root
+# keys= root,ironic_cpi,CPIManager,,Configdrive,Registry,Create_Stemcell,Delete_Stemcell,Create_VM,Delete_VM,Has_VM,Reboot_VM,Set_VM_Metadata,Create_Disk,Delete_Disk,Has_Disk,Attach_Disk,Detach_Disk,Get_Disks
 
 [handlers]
 keys=consoleHandler,file
@@ -9,10 +10,18 @@ keys=simpleFormatter,file
 
 [logger_root]
 level=DEBUG
-handlers=file
+handlers=consoleHandler,file
 
 [logger_ironic_cpi]
 qualname=ironic_cpi
+handlers=consoleHandler,file
+
+[logger_Configdrive]
+qualname=Configdrive
+handlers=consoleHandler,file
+
+[logger_Registry]
+qualname=Registry
 handlers=consoleHandler,file
 
 [logger_Create_Stemcell]
@@ -72,11 +81,11 @@ qualname=CPIManager
 handlers=consoleHandler,file
 
 [handler_file]
-class=FileHandler
+class=handlers.RotatingFileHandler
 formatter=file
 <% if_p('ironic_cpi.logging') do |log| %>
 level=<%= log %>
-args=('/var/vcap/sys/log/ironic_cpi/ironic_cpi.actions.log', 'w')
+args=('/var/vcap/sys/log/ironic_cpi/ironic_cpi.actions.log', 'a', 1000000, 10)
 <% end.else do %>
 level=ERROR
 args=(os.devnull, 'w')
