@@ -12,6 +12,9 @@ jobs:
   - name: ironic_cpi
     templates:
       - name: ironic_cpi
+        release: ironic_cpi
+      - name: webdav_registry
+        release: ironic_cpi
     instances: 1
     persistent_disk: 0
     resource_pool: small_z1
@@ -26,5 +29,17 @@ properties:
     ironic_auth_token: " "
     repository_stemcell_url: "http://ironic/images"
     repository_metadata_url: "http://ironic/metadata"
-    registry_endpoint: "http://ironic/service"
+    repository_metadata_publickeys: ["ssh key adfadfa"]
+    repository_metadata_nameservers: ["8.8.8.8", "4.4.4.4"]
+  registry:
+    host: "registry"
+    port: 25777
+  ntp: ["pool0.ntp.org", "pool1.ntp.org"]
+  agent:
+    mbus: "nats://jose:riguera@nats:5555"
+  blobstore:
+    provider: "dav"
+    address: "blobstore"
+    port: 25250
+    path: "/var/vcap/micro_bosh/data/cache"
 
