@@ -1,0 +1,16 @@
+---
+name: nginx_lua
+
+dependencies:
+- zlib
+- openssl
+- luajit
+
+files:
+- nginx_lua/nginx-1.10.1.tar.gz                     # http://nginx.org/download/nginx-1.10.1.tar.gz
+- nginx_lua/headers-more-nginx-module-0.30.tar.gz   # https://github.com/openresty/headers-more-nginx-module/archive/v0.30.tar.gz 
+- nginx_lua/pcre-8.39.tar.gz                        # ftp://ftp.csx.cam.ac.uk/pub/software/programming/pcre/pcre-8.39.tar.gz
+- nginx_lua/lua-nginx-module-0.10.5.tar.gz          # https://github.com/openresty/lua-nginx-module/archive/v0.10.5.tar.gz
+- nginx_lua/ngx_devel_kit-0.3.0.tar.gz              # https://github.com/simpl/ngx_devel_kit/archive/v0.3.0.tar.gz
+- openssl/openssl-1.0.2h.tar.gz                     # http://openssl.org/source/openssl-1.0.2h.tar.gz
+- zlib/zlib-1.2.8.tar.gz                            # http://zlib.net/zlib-1.2.8.tar.gz

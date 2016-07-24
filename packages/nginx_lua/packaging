@@ -1,0 +1,48 @@
+#!/usr/bin/env bash
+set -e -x
+
+echo "Extracting zlib ... "
+tar xzvf zlib/zlib-1.2.8.tar.gz
+export ZLIB_SRC=${BOSH_COMPILE_TARGET}/zlib-1.2.8
+
+echo "Extracting openssl ... "
+tar xvf openssl/openssl-1.0.2h.tar.gz
+export OPENSSL_SRC=${BOSH_COMPILE_TARGET}/openssl-1.0.2h
+
+echo "Extracting NDK ..."
+tar xzvf nginx_lua/ngx_devel_kit-0.3.0.tar.gz
+
+echo "Extracting Lua Nginx module ..."
+tar xzvf nginx_lua/lua-nginx-module-0.10.5.tar.gz
+
+echo "Extracting pcre..."
+tar xzvf nginx_lua/pcre-8.39.tar.gz
+
+echo "Extracting headers-more module..."
+tar xzvf nginx_lua/headers-more-nginx-module-0.30.tar.gz
+
+echo "Extracting nginx..."
+tar xzvf nginx_lua/nginx-1.10.1.tar.gz
+
+echo "Building nginx..."
+export LUAJIT_LIB=/var/vcap/packages/luajit/lib
+export LUAJIT_INC=/var/vcap/packages/luajit/include/luajit-2.0
+export OPENSSL_LIB=/var/vcap/packages/openssl/lib
+export ZLIB_LIB=/var/vcap/packages/zlib/lib
+
+pushd nginx-1.10.1
+  ./configure \
+    --prefix=${BOSH_INSTALL_TARGET} \
+    --with-ld-opt="-Wl,-rpath,$LUAJIT_LIB,-rpath,$OPENSSL_LIB,-rpath,$ZLIB_LIB" \
+    --with-pcre=../pcre-8.39 \
+    --with-zlib=${ZLIB_SRC} \
+    --with-openssl=${OPENSSL_SRC} \
+    --add-module=../headers-more-nginx-module-0.30 \
+    --with-http_dav_module \
+    --with-http_realip_module \
+    --add-module=../ngx_devel_kit-0.3.0 \
+    --add-module=../lua-nginx-module-0.10.5 \
+    --with-http_ssl_module
+  make
+  make install
+popd

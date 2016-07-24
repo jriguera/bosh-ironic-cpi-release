@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+set -e -x
+
+echo "Extracting LuaJIT ..."
+tar xzvf nginx/LuaJIT-2.0.4.tar.gz
+
+echo "Building LuaJIT ..."
+pushd LuaJIT-2.0.4
+  make
+  make install PREFIX=${BOSH_INSTALL_TARGET}
+popd

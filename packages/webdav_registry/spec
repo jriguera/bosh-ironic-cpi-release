@@ -1,0 +1,12 @@
+---
+name: webdav_registry
+
+dependencies:
+- zlib
+- openssl
+- luajit
+- nginx_lua
+
+files:
+- bosh_webdav_registry/**/*
+

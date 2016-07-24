@@ -1,0 +1,7 @@
+---
+name: luajit
+
+dependencies: []
+
+files:
+- nginx/LuaJIT-2.0.4.tar.gz              # http://luajit.org/download/LuaJIT-2.0.4.tar.gz
