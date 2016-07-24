@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
 
 PACKAGE="openssl"
-VERSION="1.0.2d"
+VERSION="1.0.2h"
 FILE="openssl-${VERSION}.tar.gz"
-URL="http://openssl.org/source/openssl-1.0.2d.tar.gz"
+URL="https://www.openssl.org/source/openssl-${VERSION}.tar.gz"
 
 if [ ! -s "${PACKAGE}/${FILE}" ]; then
   echo "Downloading ${URL} ..."
   mkdir -p ${PACKAGE}
-  curl -s "${URL}" -o "${PACKAGE}/${FILE}"
+  curl -L -s "${URL}" -o "${PACKAGE}/${FILE}"
 fi

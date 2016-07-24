@@ -4,7 +4,7 @@
 set -e -x
 
 echo "Extracting python ... "
-tar xvf python/Python-2.7.10.tar.xz
+tar xvf python/Python-2.7.12.tar.xz
 
 echo "Defining libraries path ..."
 CPPFLAGS="-I/var/vcap/packages/bzip2/include ${CPPFLAGS}"
@@ -23,7 +23,7 @@ export LD_LIBRARY_PATH="${LIBRARY_PATH}"
 export CFLAGS="-fPIC ${CFLAGS}"
 
 echo "Building python ... "
-pushd Python-2.7.10
+pushd Python-2.7.12
   ./configure --prefix=${BOSH_INSTALL_TARGET}
   make
   make install
