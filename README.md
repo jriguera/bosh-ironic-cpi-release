@@ -75,10 +75,42 @@ creating the JSON file. There are two ideas behing this implementation:
 
   * To run this program in a external NGINX server, the one which provides the ConfigDrive Metadata. 
   Ironic ConfigDrive Metadata and Stemcells can be living on the same location as the registry,
-  centralizing all BOSH Agent specifications for every server on the same repository.
+  centralizing all BOSH Agent specifications for every server on the same repository. It is already
+  included in the repository https://github.com/jriguera/ansible-ironic-standalone, just run the
+  `setup-ironic-bosh-registry.yml` playbook after changing the Registry credentials
   
   * Run the WebDAV inside BOSH VM providing Stemcell and ConfigDrive Metadata storage and 
-  Registry API.
+  Registry API. Just include the job in your deployment.
+
+
+# Example configuration
+
+```
+properties:
+  ironic_cpi:
+    ironic_url: "http://ironic:6385/"
+    ironic_auth_token: " "
+    repository_stemcell_url: "http://ironic/images"
+    repository_metadata_url: "http://ironic/metadata"
+    repository_metadata_publickeys: ["ssh key adfadfa"]
+    repository_metadata_nameservers: ["8.8.8.8", "4.4.4.4"]
+  registry:
+    host: "10.230.44.55"
+    port: 25000
+    username: "registry"
+    password: "hola"
+    nginx:
+      metadata_username: "metadata"
+      metadata_password: "adios"
+  ntp: ["pool0.ntp.org", "pool1.ntp.org"]
+  agent:
+    mbus: "nats://jose:riguera@nats:5555"
+  blobstore:
+    provider: "dav"
+    address: "blobstore"
+    port: 25250
+    path: "/var/vcap/micro_bosh/data/cache"
+```
 
 
 # General considerations
