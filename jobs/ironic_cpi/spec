@@ -1,12 +1,12 @@
 ---
 name: ironic_cpi
 
+description: CPI to talk with Openstack Ironic in order to provision physical servers
 
 templates:
   bin/cpi.erb: bin/cpi
   config/cpi.ini.erb: config/cpi.ini
   config/logging.ini.erb: config/logging.ini
-
 
 packages:
 - genisoimage
@@ -17,7 +17,6 @@ packages:
 - python27
 - setuptools
 - ironic_cpi
-
 
 properties:
   ironic_cpi.ironic_url:
@@ -84,13 +83,12 @@ properties:
   ironic_cpi.repository_metadata_create_files:
     description: Create and keep meta_data and user_data files in the repository
     default: True
-  ironic_cpi.repository_metadata_publickeys:
-    description: List of OpenSSH public keys for configdrive
-    example: "ssh-rsa AAAAB hola@mylaptop.local"
-    default: []
-  ironic_cpi.repository_metadata_nameservers:
+  ironic_cpi.metadata_publickeys:
+    description: List of OpenSSH public keys for configdrive (for bosh ssh)
+    example: ["ssh-rsa AAAAB hola@mylaptop.local"]
+  ironic_cpi.metadata_nameservers:
     description: List of default nameservers for configdrive
-    default: []
+    default: ["8.8.8.8"]
 
   ironic_cpi.registry_url:
     description: Full URL API for registry
@@ -118,10 +116,6 @@ properties:
   registry.endpoint:
     description: Full URL for the registry endpoint that may include basic auth credentials
     example: http://admin:admin-password@some-ip:port
-  ironic_cpi.cacert:
-    description: CA certificate for HTTPS connections
-  ironic_cpi.timeout:
-    description: HTTP timeout
 
   ntp:
     description: List of NTP servers
