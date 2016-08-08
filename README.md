@@ -5,6 +5,7 @@ A Bosh CPI to manage baremetal servers using Ironic (Standalone).
 Tested using https://github.com/jriguera/ansible-ironic-standalone
 
 
+Some "screenshots":
 ```
 $ bosh status
 Config
@@ -26,8 +27,7 @@ Deployment
 
 ```
 
-
-Some "screenshots":
+BOSH view:
 
 ```
 $ bosh vms
@@ -62,22 +62,21 @@ $ ironic node-list
 
 ```
 
-
 This BOSH Release has two jobs. **ironic_cpi**, the main one, the implementation of the CPI 
 and an optional **dav_registry** which is an implementation of the BOSH Registry API in Lua 
 for Nginx. Making the most of the WebDAV protocol (which is needed to manage the Config-Drive 
-Metatata) I have decided to create a simple implementation of the Registry API to delegate 
-in WebDAV as a bakend. The JSON *settings* needed by the agent is really simple, no database 
-is needed and it is possible to use the Config-Drive Metadata as storage. The Lua 
-implementation just do internal redirections to metadata location, doing some checks and 
+Metatata for Ironic standalone) I have decided to create a simple implementation of the Registry
+API to delegate in WebDAV as bakend. The JSON *settings* needed by the agent is really simple, 
+no database is needed, it is possible to use the Config-Drive Metadata as storage. The Lua 
+implementation just does internal redirections to metadata location, doing some checks and 
 creating the JSON file. There are two ideas behing this implementation:
 
-  * Run this program in a external NGINX server, the one which provides the ConfigDrive Metadata. 
+  * To run this program in a external NGINX server, the one which provides the ConfigDrive Metadata. 
   Ironic ConfigDrive Metadata and Stemcells can be living on the same location as the registry,
   centralizing all BOSH Agent specifications for every server on the same repository.
-
-  * Run the WebDAV inside BOSH VM providing Stemcell storage, ConfigDrive Metadata and Registry.
-
+  
+  * Run the WebDAV inside BOSH VM providing Stemcell and ConfigDrive Metadata storage and 
+  Registry API.
 
 
 # General considerations
@@ -86,9 +85,11 @@ Before running this sofware, take into account:
 
 
 * Servers must be predefined on Ironic (as *enroll* state) or defined using the **ironic_params**
-properties.
+properties. When the CPI runs, depending on the configuration, it wil take one of the available
+servers in *enroll* (by searching by MAC or by hardware specs: memory, cpu, disk ...) or it
+will define the baremetal server in Ironic by itself.
 
-* Physical servers need at least two disks. Because of how Bosh Agent works and how Ironic sets 
+* Baremetal servers need at least two disks. Because of how Bosh Agent works and how Ironic sets 
 up the ConfigDrive as a small partition at the end of the first device (*/dev/sda*), Bosh Agent 
 is not able to manage partitions on such way on the first device, as consecuence, a second 
 device (*/dev/sdb*) is needed for ephemeral data. A 3rd device would be used for persistent data.
@@ -117,7 +118,8 @@ changes in BOSH Agent. RAID setup could be managed by Ironic.
 
 # Motivations
 
-* Hack "Day" project just for learn.
+* Hack "Day" project just for learn and to make most of Ansible Ironic project, in order to 
+define a common standard way to manage physical servers.
 
 * Python? Why not? Is a great language which does not need to be compiled and (the main reason) 
 OpenStack is made with it, so the libraries provide all the functionality. Also, the Ironic 
@@ -129,6 +131,7 @@ deploy VMs and physical servers using the same BOSH Director. One could have VMw
 and Ironic for special jobs like Cloud Foundry runners. The CPI would delegate the calls on
 the other one for VM management. I am not sure if this is really needed ...
 
+* Make the most of hte
 
 
 # Local Dev environment
