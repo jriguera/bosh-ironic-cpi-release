@@ -49,11 +49,11 @@ cacert=<%= p("ironic_cpi.repository_metadata_cacert") %>
 timeout=<%= p("ironic_cpi.repository_metadata_timeout") %>
 <% end %>
 create_files=<%= p("ironic_cpi.repository_metadata_create_files") %>
-<% if_p("ironic_cpi.repository_metadata_publickeys") do %>
-publickeys=<%= p("ironic_cpi.repository_metadata_publickeys") %>
+<% if_p("ironic_cpi.metadata_publickeys") do %>
+publickeys=<%= p("ironic_cpi.metadata_publickeys") %>
 <% end %>
-<% if_p("ironic_cpi.repository_metadata_nameservers") do %>
-nameservers=<%= p("ironic_cpi.repository_metadata_nameservers") %>
+<% if_p("ironic_cpi.metadata_nameservers") do %>
+nameservers=<%= p("ironic_cpi.metadata_nameservers") %>
 <% end %>
 
 
@@ -69,7 +69,7 @@ password=<%= p("ironic_cpi.registry_password","") %>
 <% if_p("registry.endpoint") do %>
 url=<%= p("registry.endpoint") %>
 <% end.else do %>
-url=http://<%= p("registry.host") %>:<%= p("registry.port") %>
+url=http://<%= p("registry.host") %>:<%= p("registry.port") %>/registry
 <% end %>
 <% if_p("registry.username") do %>
 username=<%= p("registry.username") %>
