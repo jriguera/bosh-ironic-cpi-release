@@ -10,19 +10,19 @@ tar xvf openssl/openssl-1.0.2h.tar.gz
 export OPENSSL_SRC=${BOSH_COMPILE_TARGET}/openssl-1.0.2h
 
 echo "Extracting NDK ..."
-tar xzvf nginx_lua/ngx_devel_kit-0.3.0.tar.gz
+tar xzvf nginx-lua/ngx_devel_kit-0.3.0.tar.gz
 
 echo "Extracting Lua Nginx module ..."
-tar xzvf nginx_lua/lua-nginx-module-0.10.5.tar.gz
+tar xzvf nginx-lua/lua-nginx-module-0.10.5.tar.gz
 
 echo "Extracting pcre..."
-tar xzvf nginx_lua/pcre-8.39.tar.gz
+tar xzvf nginx-lua/pcre-8.39.tar.gz
 
 echo "Extracting headers-more module..."
-tar xzvf nginx_lua/headers-more-nginx-module-0.30.tar.gz
+tar xzvf nginx-lua/headers-more-nginx-module-0.30.tar.gz
 
 echo "Extracting nginx..."
-tar xzvf nginx_lua/nginx-1.10.1.tar.gz
+tar xzvf nginx-lua/nginx-1.10.1.tar.gz
 
 echo "Building nginx..."
 export LUAJIT_LIB=/var/vcap/packages/luajit/lib

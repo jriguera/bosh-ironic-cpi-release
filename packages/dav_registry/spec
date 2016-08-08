@@ -1,0 +1,8 @@
+---
+name: dav_registry
+
+dependencies: []
+
+files:
+- bosh_webdav_lua_registry/**/*
+

@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+set -e -x
+
+echo "Installing lua files ... "
+pushd bosh_webdav_lua_registry
+  cp *.lua ${BOSH_INSTALL_TARGET}/
+popd
