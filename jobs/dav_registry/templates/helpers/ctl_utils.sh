@@ -1,46 +1,55 @@
 # Helper functions used by ctl scripts
 
-# links a job file (probably a config file) into a package
+# links a file (probably a config file) into a package
 # Example usage:
 # link_job_file_to_package config/redis.yml [config/redis.yml]
 # link_job_file_to_package config/wp-config.php wp-config.php
+# WEBAPP_DIR and JOB_DIR must be defined
 link_job_file_to_package() {
   source_job_file=$1
   target_package_file=${2:-$source_job_file}
-  full_package_file=$WEBAPP_DIR/${target_package_file}
 
-  link_job_file ${source_job_file} ${full_package_file}
-}
-
-# links a job file (probably a config file) somewhere
-# Example usage:
-# link_job_file config/bashrc /home/vcap/.bashrc
-link_job_file() {
-  source_job_file=$1
-  target_file=$2
   full_job_file=$JOB_DIR/${source_job_file}
-
-  echo link_job_file ${full_job_file} ${target_file}
-  if [[ ! -f ${full_job_file} ]]
-  then
-    echo "file to link ${full_job_file} does not exist"
+  full_package_file=$WEBAPP_DIR/${target_package_file}
+  echo link_job_file_to_package $full_job_file $full_package_file
+  if [ ! -f ${full_job_file} ]; then
+    echo "File to link ${full_job_file} does not exist"
   else
     # Create/recreate the symlink to current job file
     # If another process is using the file, it won't be
     # deleted, so don't attempt to create the symlink
-    mkdir -p $(dirname ${target_file})
-    ln -nfs ${full_job_file} ${target_file}
+    echo "Linking ${source_job_file} -> ${full_package_file}"
+    mkdir -p $(dirname ${full_package_file})
+    ln -nfs ${full_job_file} ${full_package_file}
   fi
 }
+
+
+# ldconf function to load dynamic libs
+#
+# Use case:
+# Python dlopen does not pay attention to LD_LIBRARY_PATH, so
+# ctypes.util.find_library is not able to find dyn libs, the only
+# way to do is by defining the folders in ldconfig
+ldconf() {
+    path=$1
+
+    echo "$path" | tr ':' '\n' > $TMP_DIR/ld.so.conf
+    ldconfig -f $TMP_DIR/ld.so.conf
+    rm -f $TMP_DIR/ld.so.conf
+}
+
 
 # If loaded within monit ctl scripts then pipe output
 # If loaded from 'source ../utils.sh' then normal STDOUT
 redirect_output() {
-  SCRIPT=$1
+  script=$1
+
   mkdir -p /var/vcap/sys/log/monit
-  exec 1>> /var/vcap/sys/log/monit/$SCRIPT.log
-  exec 2>> /var/vcap/sys/log/monit/$SCRIPT.err.log
+  exec 1>> /var/vcap/sys/log/monit/$script.log
+  exec 2>> /var/vcap/sys/log/monit/$script.err.log
 }
+
 
 pid_guard() {
   pidfile=$1
@@ -48,16 +57,15 @@ pid_guard() {
 
   if [ -f "$pidfile" ]; then
     pid=$(head -1 "$pidfile")
-
     if [ -n "$pid" ] && [ -e /proc/$pid ]; then
       echo "$name is already running, please stop it first"
       exit 1
     fi
-
-    echo "Removing stale pidfile..."
+    echo "Removing stale pidfile ..."
     rm $pidfile
   fi
 }
+
 
 wait_pid() {
   pid=$1
@@ -66,7 +74,6 @@ wait_pid() {
   force=${4:-0}
   countdown=$(( $timeout * 10 ))
 
-  echo wait_pid $pid $try_kill $timeout $force $countdown
   if [ -e /proc/$pid ]; then
     if [ "$try_kill" = "1" ]; then
       echo "Killing $pidfile: $pid "
@@ -77,7 +84,7 @@ wait_pid() {
       [ "$countdown" != '0' -a $(( $countdown % 10 )) = '0' ] && echo -n .
       if [ $timeout -gt 0 ]; then
         if [ $countdown -eq 0 ]; then
-          if [ "$force" = "1" ]; then
+          if [ "$force" == "1" ]; then
             echo -ne "\nKill timed out, using kill -9 on $pid... "
             kill -9 $pid
             sleep 0.5
@@ -100,6 +107,7 @@ wait_pid() {
   fi
 }
 
+
 wait_pidfile() {
   pidfile=$1
   try_kill=$2
@@ -113,14 +121,13 @@ wait_pidfile() {
       echo "Unable to get pid from $pidfile"
       exit 1
     fi
-
     wait_pid $pid $try_kill $timeout $force
-
     rm -f $pidfile
   else
     echo "Pidfile $pidfile doesn't exist"
   fi
 }
+
 
 kill_and_wait() {
   pidfile=$1
@@ -128,8 +135,8 @@ kill_and_wait() {
   # Append 'with timeout {n} seconds' to monit start/stop program configs
   timeout=${2:-25}
   force=${3:-1}
-  if [[ -f ${pidfile} ]]
-  then
+  
+  if [ -f ${pidfile} ]; then
     wait_pidfile $pidfile 1 $timeout $force
   else
     # TODO assume $1 is something to grep from 'ps ax'
@@ -137,6 +144,7 @@ kill_and_wait() {
     wait_pid $pid 1 $timeout $force
   fi
 }
+
 
 check_nfs_mount() {
   opts=$1
@@ -149,7 +157,7 @@ check_nfs_mount() {
     echo "Mounting NFS..."
     mount $opts $exports $mount_point
     if [ $? != 0 ]; then
-      echo "Cannot mount NFS from $exports to $mount_point, exiting..."
+      echo "Cannot mount NFS from $exports to $mount_point, exiting ..."
       exit 1
     fi
   fi

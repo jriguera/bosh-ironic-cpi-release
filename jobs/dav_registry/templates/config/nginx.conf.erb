@@ -1,0 +1,57 @@
+# user vcap;
+daemon off;
+
+error_log /var/vcap/sys/log/dav_registry/error.log <%= p('registry.nginx.loglevel', 'error') %>;
+pid /var/vcap/sys/run/dav_registry/nginx-lua.pid;
+
+worker_processes <%= p('registry.nginx.workers', 'auto') %>;
+worker_priority <%= p('registry.nginx.workers_priority', '0') %>;
+
+working_directory /var/vcap/data/tmp/dav_registry;
+
+events {
+    worker_connections 8192;
+    use epoll;
+}
+
+http {
+    # Basic settings
+    server_tokens off;
+
+    sendfile on;
+    sendfile_max_chunk 256m;
+    directio 5m;
+
+    tcp_nopush on;
+    tcp_nodelay on;
+    keepalive_timeout <%= p('registry.nginx.keepalive_timeout', '75s') %> <%= p('registry.nginx.keepalive_timeout_header', '20s') %>;
+    keepalive_requests 512;
+    connection_pool_size 256;
+
+    # Temp path
+    client_body_temp_path /var/vcap/data/tmp/dav_registry/client_body;
+    proxy_temp_path /var/vcap/data/tmp/dav_registry/proxy;
+    fastcgi_temp_path /var/vcap/data/tmp/dav_registry/fastcgi;
+    uwsgi_temp_path /var/vcap/data/tmp/dav_registry/uwsgi;
+    scgi_temp_path /var/vcap/data/tmp/dav_registry/scgi;
+
+    include /var/vcap/jobs/dav_registry/config/mime.types;
+    default_type text/html;
+
+    # Lua options
+    lua_package_path /var/vcap/packages/dav_registry/?.lua; 
+    lua_code_cache on;
+
+    # Gzip module options
+    gzip on;
+    gzip_min_length 1250;
+    gzip_comp_level 2;
+    gzip_proxied off;
+    gzip_types text/plain text/css application/javascript application/x-javascript text/xml application/xml text/javascript;
+    gzip_vary on;
+
+    # Log format
+    log_format timed_combined '$remote_addr - $remote_user [$time_local] "$request" $status $body_bytes_sent "$http_referer" "$http_user_agent" $request_time $upstream_response_time $pipe';
+
+    include /var/vcap/jobs/dav_registry/config/sites/*;
+}

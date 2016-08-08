@@ -26,31 +26,40 @@ set -e # exit immediately if a simple command exits with a non-zero status
 set -u # report the usage of uninitialized variables
 
 # Setup env vars and folders for the ctl script
-source /var/vcap/jobs/webdav_registry/helpers/ctl_setup.sh 'webdav_registry'
+source /var/vcap/jobs/dav_registry/helpers/ctl_setup.sh 'dav_registry' 'nginx-lua'
 
-# Log some info to the Monit Log file
-function log {
-    local message=${1}
-    local timestamp=`date +%y:%m:%d-%H:%M:%S`
-    echo "${timestamp} :: ${message}" >> "/var/vcap/sys/log/monit/$JOB_NAME.log"
-}
+# Create foldes to store the metadata (see registry vhost configuration) ...
+for dir in "metadata"; do
+  mkdir -p ${STORE_DIR}/${dir}
+  chown vcap:vcap ${STORE_DIR}/${dir}
+  chmod 775 ${STORE_DIR}/${dir}
+done
 
+TIMESTAMP=$(date +%y:%m:%d-%H:%M:%S)
+
+# Control
 case $1 in
   start)
-    log "Starting webdav_registry nginx"
+    echo "$TIMESTAMP :: Starting dav_registry nginx-lua ..."
     pid_guard $PIDFILE $JOB_NAME
-    echo $$ > $PIDFILE
     ldconf $LD_LIBRARY_PATH
-    exec chpst -u vcap:vcap "${JOB_DIR}/packages/nginx_lua/sbin/nginx" -g "pid $PIDFILE;" -c $CONFIG_FILE \
-        >>$LOG_DIR/$JOB_NAME.stdout.log \
-        2>>$LOG_DIR/$JOB_NAME.stderr.log
+    exec chpst -u vcap:vcap /var/vcap/packages/nginx-lua/sbin/nginx \
+    	-c /var/vcap/jobs/dav_registry/config/nginx.conf \
+    >>$LOG_DIR/nginx-lua.stdout.log \
+    2>>$LOG_DIR/nginx-lua.stderr.log
     ;;
   stop)
-    log "Stopping webdav_registry nginx"
+    echo "$TIMESTAMP :: Stopping davregistry nginx-lua ..."
+    kill -QUIT $(head -1 $PIDFILE)
+    sleep 5
     kill_and_wait $PIDFILE
     ;;
+  reload)
+    echo "$TIMESTAMP :: Reloading davregistry nginx-lua ..."
+    kill -HUP $(head -1 $PIDFILE)
+    ;;
   *)
-    echo "Usage: webdav_registry {start|stop}"
+    echo "Usage: nginx-lua {start|stop|reload}"
     ;;
 esac
 exit 0

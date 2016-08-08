@@ -1,0 +1,44 @@
+server {
+    listen <%= p('registry.address','*') %>:<%= p('registry.port', '80') %> default_server;
+    server_name davregistry;
+    root /var/vcap/store/dav_registry;
+    charset off;
+    disable_symlinks off;
+    limit_rate 0;
+    limit_rate_after 0;
+
+    access_log /var/vcap/sys/log/dav_registry/access.log timed_combined;
+
+    location /metadata/ {
+       <% if_p("registry.username") do %>
+       satisfy any;
+       # allow localhost because of the registry redirections
+       allow 127.0.0.0/24;
+       allow <%= p(['registry.address', 'registry.host']) %>;
+       deny  all;
+       auth_basic "Metadata Auth Basic";
+       <% if_p("registry.nginx.metadata_username") do %>
+       auth_basic_user_file auth/metadata;
+       <% end.else do %>
+       auth_basic_user_file auth/registry;
+       <% end %>
+       <% end %>
+       autoindex on;
+       create_full_put_path on;
+       client_body_buffer_size 16k;
+       default_type application/octet-stream;
+       dav_access user:rw group:rw all:r;
+       client_max_body_size 100M;
+       dav_methods PUT DELETE MKCOL COPY MOVE;
+    }
+
+    location /registry/ {
+       <% if_p("registry.username") do %>
+       auth_basic "Registry Auth Basic";
+       auth_basic_user_file auth/registry;
+       <% end %>
+       content_by_lua_file /var/vcap/packages/dav_registry/webdav-registry.lua;
+       default_type application/json;
+       client_max_body_size 10M;       
+    }
+}

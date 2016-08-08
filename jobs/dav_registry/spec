@@ -1,0 +1,59 @@
+---
+name: dav_registry
+
+description: Nginx-lua configuration which implements a Registry API with webdav metadata backend
+
+templates:
+  bin/ctl: bin/ctl
+  config/nginx.conf.erb: config/nginx.conf
+  config/mime.types: config/mime.types
+  config/sites/registry.conf.erb: config/sites/registry.conf
+  config/auth/registry.erb: config/auth/registry
+  config/auth/metadata.erb: config/auth/metadata
+  data/properties.sh.erb: data/properties.sh
+  helpers/ctl_setup.sh: helpers/ctl_setup.sh
+  helpers/ctl_utils.sh: helpers/ctl_utils.sh
+  bin/monit_debugger: bin/monit_debugger
+
+packages:
+- zlib
+- openssl
+- luajit
+- nginx-lua
+- dav_registry
+
+properties:
+  registry.address:
+    description: IP address where to listen for incoming connections. (For all interfaces, do not use 0.0.0.0, just do not define it)
+  registry.host:
+    description: Address of the Registry to connect to (required)
+  registry.port:
+    description: Port of the Registry for CPI and agent to connect to
+    default: 25777
+  registry.username:
+    description: Username to access the Registry
+  registry.password:
+    description: Password to access the Registry
+  registry.endpoint:
+    description: Full URL for the registry endpoint that may include basic auth credentials
+    example: http://admin:admin-password@some-ip:port
+
+  registry.nginx.loglevel:
+    description: Error loglevel
+    default: error
+  registry.nginx.workers:
+    description: Number of worker processes
+    default: auto
+  registry.nginx.workers_priority:
+    description: Priority of the worker processes
+    default: 0
+  registry.nginx.keepalive_timeout:
+    description: Time to keep a keep-alive connection open
+    default: 75s
+  registry.nginx.keepalive_timeout_header:
+    description: Show Keep-alive header
+    default: 20s
+  registry.nginx.metadata_username:
+    description: Username to access the Metadata endpoint
+  registry.nginx.metadata_password:
+    description: Password to access the Metadata endpoint
