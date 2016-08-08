@@ -25,7 +25,7 @@ class ConfigdriveError(Exception):
     """
     Base class for all ConfigDrive Exceptions
     """
-    
+
     def __init__(self, message):
         self.message = message
 
@@ -56,11 +56,14 @@ class Configdrive(object):
     def set_meta_data(self, public_keys=[]):
         # meta_data
         self.meta_data['public-keys'] = {}
-        counter = 0
-        for key in public_keys:
-            index = str(counter)
-            self.meta_data['public-keys'][index] = {'openssh-key': key}
-            counter += 1
+        if public_keys:
+            counter = 0
+            for key in public_keys:
+                index = str(counter)
+                self.meta_data['public-keys'][index] = {'openssh-key': key}
+                counter += 1
+	else:
+            self.meta_data['public-keys']['0'] = {'openssh-key': ''}
 
 
     def set_user_data(self, registry, nameservers=[], networks={}):
