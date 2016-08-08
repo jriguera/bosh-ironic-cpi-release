@@ -4,6 +4,8 @@ A Bosh CPI to manage baremetal servers using Ironic (Standalone).
 
 Tested using https://github.com/jriguera/ansible-ironic-standalone
 
+**WORK in PROGRESS**
+
 
 Some "screenshots":
 ```
@@ -130,8 +132,6 @@ deploy servers (baremetal or VM). This could be a different approach to have a C
 deploy VMs and physical servers using the same BOSH Director. One could have VMware for VMs 
 and Ironic for special jobs like Cloud Foundry runners. The CPI would delegate the calls on
 the other one for VM management. I am not sure if this is really needed ...
-
-* Make the most of hte
 
 
 # Local Dev environment
