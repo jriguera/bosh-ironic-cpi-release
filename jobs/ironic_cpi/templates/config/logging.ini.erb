@@ -85,7 +85,7 @@ class=handlers.RotatingFileHandler
 formatter=file
 <% if_p('ironic_cpi.logging') do |log| %>
 level=<%= log %>
-args=('/var/vcap/sys/log/ironic_cpi/ironic_cpi.actions.log', 'a', 1000000, 10)
+args=('/var/vcap/sys/log/director/ironic_cpi.log', 'a', 1000000, 10)
 <% end.else do %>
 level=ERROR
 args=(os.devnull, 'w')
