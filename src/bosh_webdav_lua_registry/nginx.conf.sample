@@ -10,10 +10,6 @@ server {
     access_log /var/log/nginx/registry-server_access.log;
     error_log  /var/log/nginx/registry-server_access.error.log  debug;
 
-    location / {
-       autoindex on;
-    }
-
     location /metadata/ {
        autoindex on;
        create_full_put_path on;
