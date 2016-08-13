@@ -317,12 +317,12 @@ class Create_VM(CPIAction):
                     ironic.node.delete(node.uuid)
                     raise CPIActionError(msg, long_msg)
         else:
+            ports = []
             # TODO: pagination with the nodes!
             if pxe_macs:
                 # Get node by MAC(s)
                 self.logger.debug("Searching for server definition with MAC(s): %s" % (pxe_macs))
                 for mac in pxe_macs:
-                    ports = []
                     try:
                         port = ironic.port.get_by_address(mac)
                         node = ironic.node.get(port.node_uuid)
@@ -336,12 +336,19 @@ class Create_VM(CPIAction):
                     long_msg = msg + ": %s" % (pxe_macs)
                     self.logger.error(long_msg)
                     raise CPIActionError(msg, long_msg)
+                try:
+                    ports = ironic.node.list_ports(node.uuid)
+                except ironic_exception.ClientException as e:
+                    msg = "Error, cannot get MAC(s) address for server id '%s'" % (node.uuid)
+                    long_msg = msg + ": %s" % (e)
+                    self.logger.error(long_msg)
+                    raise CPIActionError(msg, long_msg)
             else:
                 ironic_properties = resource_pool.get('ironic_properties', None)
                 self.logger.debug("Searching for server with ironic_properties='%s'" % (ironic_properties))
                 try:
                     nodes = ironic.node.list(
-                        maintenance=False, 
+                        maintenance=False,
                         provision_state=self.settings.ironic_search_state,
                         detail=True)
                 except ironic_exception.ClientException as e:
@@ -350,6 +357,26 @@ class Create_VM(CPIAction):
                     self.logger.error(long_msg)
                     raise CPIActionError(msg, long_msg)
                 for server in nodes:
+                    try:
+                        ports = ironic.node.list_ports(server.uuid)
+                    except ironic_exception.ClientException as e:
+                        msg = "Warning, cannot get MAC(s) address for server id '%s'" % (server.uuid)
+                        long_msg = msg + ": %s" % (e)
+                        self.logger.warning(long_msg)
+                        continue
+                    # Find a server based on the disk_id
+                    suitable = True
+                    macs = [ p.address for p in ports ]
+                    for disk_id in disk_locality:
+                        # Decode the device path from the uuid
+                        mac, device = self.settings.decode_disk(disk_id)
+                        if mac not in macs:
+                            msg = "Server not suitable for disk id '%s'" % (disk_id)
+                            long_msg = msg + ": it can not be attached to server id '%s'" % (server.uuid)
+                            self.logger.debug(long_msg)
+                            suitable = False
+                    continue if not suitable
+                    # Ok, the persistent disk is on this server
                     if ironic_properties:
                         # Compare the properties given by the manifest with the
                         # properties of the node
@@ -375,18 +402,19 @@ class Create_VM(CPIAction):
                     long_msg = msg + ": %s" % (ironic_properties)
                     self.logger.error(long_msg)
                     raise CPIActionError(msg, long_msg)
-            ports = []
-            try:
-                ports = ironic.node.list_ports(node.uuid)
-            except ironic_exception.ClientException as e:
-                msg = "Error, cannot get MAC(s) address for server id '%s'" % (node.uuid)
-                long_msg = msg + ": %s" % (e)
-                self.logger.error(long_msg)
-                raise CPIActionError(msg, long_msg)
             # Mix all MACs (ports and provided)
             for port in ports:
                 if port.address not in pxe_macs:
                     pxe_macs.append(port.address)
+        # Check if disks can be attached to this server
+        for disk_id in disk_locality:
+            # Decode the device path from the uuid
+            mac, device = self.settings.decode_disk(disk_id)
+            if mac not in pxe_macs:
+                msg = "Disk id '%' cannot be attached to this server" % (disk_id)
+                long_msg = msg + ": %s" % (node.uuid)
+                self.logger.error(long_msg)
+                raise CPIActionError(msg, long_msg)
         # Registry connection configuration
         registry = Registry(config['registry'], node.uuid)
         # Create network configuration
