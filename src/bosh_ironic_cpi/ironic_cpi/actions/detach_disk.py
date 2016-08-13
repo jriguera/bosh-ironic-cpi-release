@@ -40,7 +40,7 @@ class Detach_Disk(CPIAction):
         disk_id = self.args[1]
         self.logger.debug("Detaching disk id '%s' from server id '%s'" % (disk_id, vm_cid))
         # Decode the device path from the uuid
-        device = self.settings.decode_disk(disk_id, vm_cid)
+        mac, device = self.settings.decode_disk(disk_id)
         ironic = Ironic(config['ironic'], self.logger)
         # Check if disk is for this server (see name format) and if it is in
         # Ironic metadata
@@ -70,14 +70,14 @@ class Detach_Disk(CPIAction):
         self.logger.debug("Removed disk id '%s' from server id '%s' registry" % (disk_id, vm_cid))
         # Update metadata (for attach_disk and get_disks)
         disks.remove(disk_id)
-        metadata_item = {
-            'op': "add",
-            'value': disks,
-            'path': "/instance_info/disks"
+        disks_update = {
+            'op': "replace",
+            'path': "/instance_info/disks",
+            'value': disks
         }
         self.logger.debug("Updating disks in server's id '%s' metadata" % (vm_cid))
         try:
-            ironic.node.update(vm_cid, [metadata_item])
+            ironic.node.update(vm_cid, [disks_update])
         except ironic_exception.ClientException as e:
             msg = "Error updating server's id '%s' disks metadata" % (vm_cid)
             long_msg = msg + ": %s" % (e)

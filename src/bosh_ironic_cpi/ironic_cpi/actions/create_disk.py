@@ -7,6 +7,7 @@ BOSH OpenStack Ironic CPI
 from __future__ import unicode_literals
 
 from ironic_cpi.action import CPIAction
+from ironic_cpi.actions.utils.ironic import connect as Ironic
 
 
 
@@ -32,14 +33,25 @@ class Create_Disk(CPIAction):
         size = self.args[0]
         properties = self.args[1]
         vm_cid = self.args[2]
-        # TODO: inspector checks
+        # TODO: do inspector checks
         self.logger.debug("Creating disk size %s MiB for server id '%s' with properties: %s" % (size, properties, vm_cid))
         device = self.settings.disk_persistent_device
         if 'device' in properties:
             device = properties['device']
-        # Create diskid by encoding the server id. Useful to decode in
+        ironic = Ironic(config['ironic'], self.logger)
+        # Get the MAC address to build the disk id
+        try:
+            ports = ironic.node.list_ports(vm_cid)
+            # 1st mac address (just one)
+            mac = ports[0].address
+        except Exception as e:
+            msg = "Error, cannot get MAC(s) address for server id '%s'" % (vm_cid)
+            long_msg = msg + ": %s" % (e)
+            self.logger.error(long_msg)
+            raise CPIActionError(msg, long_msg)
+        # Create diskid by encoding the mac. Useful to decode in
         # attach and detach disk functions
-        disk_id = self.settings.encode_disk(device, vm_cid)
+        disk_id = self.settings.encode_disk(mac, device, size)
         self.logger.debug("Created disk '%s'" % (disk_id))
         return disk_id
 

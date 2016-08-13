@@ -44,12 +44,19 @@ class Attach_Disk(CPIAction):
         disk_id = self.args[1]
         self.logger.debug("Attaching disk id '%s' to server id '%s'" % (disk_id, vm_cid))
         # Decode the device path from the uuid
-        device = self.settings.decode_disk(disk_id, vm_cid)
+        mac, device = self.settings.decode_disk(disk_id)
         # Update metadata with the disk id (for detach_disk and get_disks)
         ironic = Ironic(config['ironic'], self.logger)
         # Check if disk is attached
         try:
             node = ironic.node.get(vm_cid)
+            ports = ironic.node.list_ports(vm_cid)
+            macs = [ p.address for p in ports ]
+            if mac not in macs:
+                msg = "Disk id '%' cannot be attached to a different server" % (disk_id)
+                long_msg = msg + ": %s" % (vm_cid)
+                self.logger.error(long_msg)
+                raise CPIActionError(msg, long_msg)
             if disk_id in node.instance_info['disks']:
                 msg = "Server id '%s' has already attached the disk" % (vm_cid)
                 long_msg = msg + ": %s" % (disk_id)
