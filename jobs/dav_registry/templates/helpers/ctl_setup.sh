@@ -17,13 +17,13 @@ export JOB_NAME=$1
 output_label=${2:-${JOB_NAME}}
 
 # Add all packages' /bin & /sbin into $PATH
-for package_bin_dir in $(ls -d /var/vcap/packages/*/*bin); do
+for package_bin_dir in $(ls -d /var/vcap/jobs/$JOB_NAME/packages/*/*bin); do
   PATH=${package_bin_dir}:$PATH
 done
 export PATH
 
 LD_LIBRARY_PATH=${LD_LIBRARY_PATH:-''} # default to empty
-for package_bin_dir in $(ls -d /var/vcap/packages/*/lib); do
+for package_bin_dir in $(ls -d /var/vcap/jobs/$JOB_NAME/packages/*/lib); do
   LD_LIBRARY_PATH=${package_bin_dir}:$LD_LIBRARY_PATH
 done
 export LD_LIBRARY_PATH

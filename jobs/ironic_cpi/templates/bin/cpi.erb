@@ -1,8 +1,11 @@
 #!/usr/bin/env bash
 
+NAME=<%= name %>
+DEPLOYMENT_NAME=<%= spec.deployment %>
 # Set directories
-PACKAGES_DIR=${BOSH_PACKAGES_DIR:-/var/vcap/packages}
+PACKAGES_DIR=${BOSH_PACKAGES_DIR:-/var/vcap/jobs/$JOB_NAME/packages}
 JOBS_DIR=${BOSH_JOBS_DIR:-/var/vcap/jobs}
+JOB_DIR=${JOBS_DIR}/${JOB_NAME}
 LOGS_DIR=/var/vcap/sys/log
 
 <% if_p('env.http_proxy') do |http_proxy| %>
@@ -26,7 +29,7 @@ if [ ! -d "$LOGS_DIR/ironic_cpi" ]; then
 fi
 
 # Add all packages' /bin & /sbin into $PATH
-for package_bin_dir in $(ls -d /var/vcap/packages/*/*bin); do
+for package_bin_dir in $(ls -d ${PACKAGES_DIR}/*/*bin); do
   export PATH=${package_bin_dir}:$PATH
 done
 
