@@ -1,5 +1,5 @@
 check process nginx-lua
-  with pidfile /var/vcap/sys/run/dav_registry/nginx-lua.pid
-  start program "/var/vcap/jobs/dav_registry/bin/ctl start"
-  stop program "/var/vcap/jobs/dav_registry/bin/ctl stop"
+  with pidfile /var/vcap/sys/run/webdav_metadata_registry/nginx-lua.pid
+  start program "/var/vcap/jobs/webdav_metadata_registry/bin/ctl start"
+  stop program "/var/vcap/jobs/webdav_metadata_registry/bin/ctl stop"
   group vcap
