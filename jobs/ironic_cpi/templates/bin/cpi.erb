@@ -3,9 +3,9 @@
 NAME=<%= name %>
 DEPLOYMENT_NAME=<%= spec.deployment %>
 # Set directories
-PACKAGES_DIR=${BOSH_PACKAGES_DIR:-/var/vcap/jobs/$JOB_NAME/packages}
+PACKAGES_DIR=${BOSH_PACKAGES_DIR:-/var/vcap/jobs/$NAME/packages}
 JOBS_DIR=${BOSH_JOBS_DIR:-/var/vcap/jobs}
-JOB_DIR=${JOBS_DIR}/${JOB_NAME}
+JOB_DIR=${JOBS_DIR}/${NAME}
 LOGS_DIR=/var/vcap/sys/log
 
 <% if_p('env.http_proxy') do |http_proxy| %>
