@@ -1,16 +1,18 @@
 ---
-name: dav_registry
+name: webdav_metadata_registry
 
-description: Nginx-lua configuration which implements a Registry API with webdav metadata backend
+description: Nginx-lua configuration which implements a Registry API with webdav Metadata backend
 
 templates:
   bin/ctl: bin/ctl
+  bin/pre-start: bin/pre-start
+  data/properties.sh.erb: data/properties.sh
   config/nginx.conf.erb: config/nginx.conf
   config/mime.types: config/mime.types
   config/sites/registry.conf.erb: config/sites/registry.conf
+  config/sites/repository.conf.erb: config/sites/repository.conf
   config/auth/registry.erb: config/auth/registry
   config/auth/metadata.erb: config/auth/metadata
-  data/properties.sh.erb: data/properties.sh
   helpers/ctl_setup.sh: helpers/ctl_setup.sh
   helpers/ctl_utils.sh: helpers/ctl_utils.sh
   bin/monit_debugger: bin/monit_debugger
@@ -23,6 +25,15 @@ packages:
 - dav_registry
 
 properties:
+  webdav_repository.enabled:
+    description: Enable webdav repository for stemcells
+    default: True
+  webdav_repository.address:
+    description: IP address where to listen for incoming connections. (For all interfaces, do not use 0.0.0.0, just do not define it)
+  webdav_repository.host:
+    description: Address of the Repository to connect to
+    default: 8081
+
   registry.address:
     description: IP address where to listen for incoming connections. (For all interfaces, do not use 0.0.0.0, just do not define it)
   registry.host:
@@ -57,3 +68,4 @@ properties:
     description: Username to access the Metadata endpoint
   registry.nginx.metadata_password:
     description: Password to access the Metadata endpoint
+

@@ -1,13 +1,13 @@
 server {
     listen <%= p('registry.address','*') %>:<%= p('registry.port', '80') %> default_server;
-    server_name davregistry;
-    root /var/vcap/store/dav_registry;
+    server_name registry;
+    root /var/vcap/store/webdav_metadata_registry/registry;
     charset off;
     disable_symlinks off;
     limit_rate 0;
     limit_rate_after 0;
 
-    access_log /var/vcap/sys/log/dav_registry/access.log timed_combined;
+    access_log /var/vcap/sys/log/webdav_metadata_registry/registry-access.log timed_combined;
 
     location /metadata/ {
        <% if_p("registry.username") do %>
@@ -37,8 +37,8 @@ server {
        auth_basic "Registry Auth Basic";
        auth_basic_user_file auth/registry;
        <% end %>
-       content_by_lua_file /var/vcap/packages/dav_registry/webdav-registry.lua;
+       content_by_lua_file /var/vcap/jobs/webdav_metadata_registry/packages/dav_registry/webdav-registry.lua;
        default_type application/json;
-       client_max_body_size 10M;       
+       client_max_body_size 10M;
     }
 }
