@@ -58,7 +58,9 @@ class CPI(object):
             'region_name': False,
             'auth_domain': True,
             'auth_url': False,
-            'cacert': False
+            'cacert': False,
+            'clean': False,
+            'clean_steps': False
         },
         "stemcell": {
             'repository_type': True,

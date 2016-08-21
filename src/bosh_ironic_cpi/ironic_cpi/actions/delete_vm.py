@@ -73,10 +73,30 @@ class Delete_VM(CPIAction):
         try:
             registry.delete()
         except RegistryError as e:
-            msg = "Errot deleting registry configuration for server id '%s'" % (uuid)
+            msg = "Error deleting registry configuration for server id '%s'" % (uuid)
             long_msg = msg + ": %s" % (e)
             self.logger.warning(long_msg)
             #raise CPIActionError(msg, long_msg)
+
+
+    def _wait_for_state(self, ironic, uuid, state='available'):
+        # Sort of timeout for waiting in ironic loops. 30s x 40 is the limit
+        ironic_timer = self.settings.ironic_sleep_times
+        ironic_sleep = self.settings.ironic_sleep_seconds
+        while ironic_timer > 0:
+            status = ironic.node.states(uuid).provision_state
+            if status == state:
+                self.logger.debug("Server id '%s' status '%s'" % (uuid, status))
+                break
+            self.logger.debug("Server id '%s' status '%s', waiting" % (uuid, status))
+            time.sleep(ironic_sleep)
+            ironic_timer -= 1
+        else:
+            msg = "Server id '%s' did not become '%s' after %d s."
+            msg = msg % (uuid, state, (self.settings.ironic_sleep_times * ironic_sleep))
+            long_msg = msg + ": Timeout Error"
+            self.logger.error(long_msg)
+            raise CPIActionError(msg, long_msg)
 
 
     ##
@@ -89,8 +109,6 @@ class Delete_VM(CPIAction):
     #   returned from create_vm
     def run(self, config):
         vm_cid = self.args[0]
-        # Sort of timeout for waiting in ironic loops. 30s x 40 is the limit
-        ironic_timer = self.settings.ironic_sleep_times
         ironic_sleep = self.settings.ironic_sleep_seconds
         self.logger.debug("Deleting server id '%s'" % (vm_cid))
         # Delete Registry configuration
@@ -101,12 +119,14 @@ class Delete_VM(CPIAction):
         # Undefine the node in Ironic to make it available
         ironic = Ironic(config['ironic'], self.logger)
         # Retrieve the value from the metadata
-        clean = None
-        delete = False
+        defined = 0
+        # 1 > server was initially in manageable state
+        # 0 > server was initially in active state
+        # 2 > server defined by the CPI
         self.logger.debug("Retrieving metadata for server id '%s'" % (vm_cid))
         try:
             node = ironic.node.get(vm_cid)
-            delete = boolean(node.instance_info['bosh_defined'])
+            defined = int(node.instance_info['bosh_defined'])
         except ironic_exception.ClientException as e:
             msg = "Ignoring error while getting server id '%s' info" % (vm_cid)
             long_msg = msg + ": %s" % (e)
@@ -120,30 +140,55 @@ class Delete_VM(CPIAction):
         # Delete meta definitions on Ironic
         self._delete_ironic_metadata(ironic, vm_cid)
         if node.provision_state != 'available':
-            self.logger.debug("Deleting (cleaning) server id '%s'" % (vm_cid))
+            self.logger.debug("Deleting server id '%s'" % (vm_cid))
             try:
                 ironic.node.set_provision_state(vm_cid, 'deleted')
-                while ironic_timer > 0:
-                    status = ironic.node.states(vm_cid).provision_state
-                    if status == 'available':
-                        self.logger.debug("Server id '%s' status '%s'" % (vm_cid, status))
-                        break
-                    self.logger.debug("Server id '%s' status '%s', waiting" % (vm_cid, status))
-                    time.sleep(ironic_sleep)
-                    ironic_timer -= 1
-                else:
-                    msg = "Server id '%s' did not become available after %d s."
-                    msg = msg % (vm_cid, (self.settings.ironic_sleep_times * ironic_sleep))
-                    long_msg = msg + ": Timeout Error"
-                    self.logger.error(long_msg)
-                    raise CPIActionError(msg, long_msg)
+                self._wait_for_state(ironic, vm_cid, 'available')
             except ironic_exception.ClientException as e:
                 msg = "Error performing cleaning of server id '%s'" % (vm_cid)
                 long_msg = msg + ": %s" % (e)
                 self.logger.error(long_msg)
                 raise CPIActionError(msg, long_msg)
-        # Delete the node from Ironic
-        if delete:
+        # http://docs.openstack.org/developer/ironic/deploy/cleaning.html
+        # Force manual cleaning steps. If cleaning steps are already defined
+        # in ironic, those transitions will cause re-run them 3 times!
+        clean = boolean(config['ironic'].get('clean', ''))
+        if clean:
+            try:
+                #  [{'interface': 'deploy', 'step': 'erase_devices'}]
+                cleansteps = ast.literal_eval(config['ironic'].get('clean_steps', '[]'))
+            except:
+                msg = "Error parsing list of clean_steps"
+                long_msg = msg + ": Fix Ironic section on CPI configuration file"
+                self.logger.error(long_msg)
+                raise CPIActionError(msg, long_msg)
+            try:
+                ironic.node.set_provision_state(vm_cid, 'manage')
+                self._wait_for_state(ironic, vm_cid, 'manageable')
+                ironic.node.set_provision_state(vm_cid, 'clean', cleansteps=cleansteps)
+                self._wait_for_state(ironic, vm_cid, 'manageable')
+                ironic.node.set_provision_state(vm_cid, 'provide')
+                self._wait_for_state(ironic, vm_cid, 'available')
+            except ironic_exception.ClientException as e:
+                msg = "Error cleaning server id '%s'" % (vm_cid)
+                long_msg = msg + ": %s" % (e)
+                self.logger.error(long_msg)
+                raise CPIActionError(msg, long_msg)
+        if defined == 0:
+            # Server was already defined as available
+            pass
+        elif defined == 1:
+            # In this case we assume server was in manageable state
+            # so switch it back to the state
+            try:
+                ironic.node.set_provision_state(vm_cid, 'manage')
+            except ironic_exception.ClientException as e:
+                msg = "Error setting server id '%s' in manageable status" % (vm_cid)
+                long_msg = msg + ": %s" % (e)
+                self.logger.error(long_msg)
+                raise CPIActionError(msg, long_msg)
+        elif defined == 2:
+            # Delete the node from Ironic
             self.logger.debug("Powering off server id '%s'" % (vm_cid))
             try:
                 ironic.node.set_power_state(vm_cid, 'off')

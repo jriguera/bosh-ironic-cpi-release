@@ -205,12 +205,12 @@ class Create_VM(CPIAction):
                 blobstore['options'][key] = blobstore_cfg[key]
         try:
             registry.create(
-                agent_id, mbus, ntp, system_disk, ephemeral_disk, 
+                agent_id, mbus, ntp, system_disk, ephemeral_disk,
                 blobstore, env, certs)
             for net in networks:
                 registry.set_network(net, networks[net])
         except RegistryError as e:
-            msg = "Cannot create registry configuration for server id '%'" % (uuid)
+            msg = "Cannot create registry configuration for server id '%s'" % (uuid)
             long_msg = msg + ": %s" % (e)
             self.logger.error(long_msg)
             raise CPIActionError(msg, long_msg)
@@ -255,6 +255,129 @@ class Create_VM(CPIAction):
         return configdrive_url
 
 
+    def _define_node(self, ironic, agent_id, macs, params):
+        self.logger.debug("Defining server for agent id '%s' with params" % (agent_id))
+        try:
+            node = ironic.node.create(**params)
+        except ironic_exception.ClientException as e:
+            msg = "Error, cannot create server with macs='%s' and provided "
+            msg += "ironic_params for agent id '%s'" % (macs, agent_id)
+            long_msg = msg + ": %s" % (e)
+            self.logger.error(long_msg)
+            raise CPIActionError(msg, long_msg)
+        self.logger.debug("Created server id '%s' for agent id '%s'" % (node.uuid, agent_id))
+        # Define the MAC ports
+        for mac in macs:
+            port = {
+                'address': mac,
+                'node_uuid': node.uuid
+            }
+            try:
+                ironic.port.create(**port)
+            except ironic_exception.ClientException as e:
+                msg = "Error, cannot create port '%s' for server id '%s'" % (mac, node.uuid)
+                long_msg = msg + ": %s. Deleting server" % (e)
+                self.logger.error(long_msg)
+                ironic.node.delete(node.uuid)
+                raise CPIActionError(msg, long_msg)
+        return node
+
+
+    def _search_node(self, ironic, properties=None, macs=[], disk_locality=[]):
+        # http://docs.openstack.org/developer/ironic/dev/states.html
+        ports = []
+        pxe_macs = list(macs)
+        # TODO: pagination with the nodes!
+        if pxe_macs:
+            # Get node by MAC(s). Server should be in available state
+            self.logger.debug("Searching for server definition with MAC(s): %s" % (pxe_macs))
+            for mac in pxe_macs:
+                try:
+                    port = ironic.port.get_by_address(mac)
+                    node = ironic.node.get(port.node_uuid)
+                    break
+                except ironic_exception.ClientException as e:
+                    msg = "Not found a server with MAC '%s'" % (mac)
+                    long_msg = msg + ": %s" % (e)
+                    self.logger.warning(long_msg)
+            else:
+                msg = "Error, server not found searching by MAC(s)"
+                long_msg = msg + ": %s" % (pxe_macs)
+                self.logger.error(long_msg)
+                raise CPIActionError(msg, long_msg)
+            try:
+                ports = ironic.node.list_ports(node.uuid)
+            except ironic_exception.ClientException as e:
+                msg = "Error, cannot get MAC(s) address for server id '%s'" % (node.uuid)
+                long_msg = msg + ": %s" % (e)
+                self.logger.error(long_msg)
+                raise CPIActionError(msg, long_msg)
+        else:
+            self.logger.debug("Searching for server with ironic_properties='%s'" % (properties))
+            try:
+                nodes = ironic.node.list(
+                    maintenance=False,
+                    provision_state=self.settings.ironic_search_state,
+                    detail=True)
+            except ironic_exception.ClientException as e:
+                msg = "Error, unable to get list of servers from Ironic"
+                long_msg = msg + ": %s" % (e)
+                self.logger.error(long_msg)
+                raise CPIActionError(msg, long_msg)
+            for server in nodes:
+                try:
+                    ports = ironic.node.list_ports(server.uuid)
+                except ironic_exception.ClientException as e:
+                    msg = "Warning, cannot get MAC(s) address for server id '%s'" % (server.uuid)
+                    long_msg = msg + ": %s" % (e)
+                    self.logger.warning(long_msg)
+                    continue
+                # Find a server based on the disk_id
+                suitable = True
+                server_macs = [ p.address.lower() for p in ports ]
+                for disk_id in disk_locality:
+                    # Decode the device path from the uuid
+                    mac, device = self.settings.decode_disk(disk_id)
+                    if mac not in server_macs:
+                        msg = "Server not suitable for disk id '%s'" % (disk_id)
+                        long_msg = msg + ": it can not be attached to server id '%s'" % (server.uuid)
+                        self.logger.debug(long_msg)
+                        suitable = False
+                if not suitable:
+                    continue
+                # Ok, the persistent disk is on this server
+                if properties:
+                    # Compare the properties given by the manifest with the
+                    # properties of the node
+                    # properties': {u'memory_mb': 1, u'cpu_arch': u'x86_64', u'local_gb': 1, u'cpus': 1}
+                    try:
+                        for key in properties:
+                            if not greater_or_equal(server.properties[key], properties[key]):
+                                break
+                        else:
+                            # Node found because all properties are >=
+                            node = server
+                            break
+                    except Exception as e:
+                        msg = "Server id '%s' not suitable with provided properties" % (node.uuid)
+                        long_msg = msg + ": %s" % (e)
+                        self.logger.warning(long_msg)
+                else:
+                    # Node found
+                    node = server
+                    break
+            else:
+                msg = "Error, not found server definition on Ironic matching the provided properties"
+                long_msg = msg + ": %s" % (properties)
+                self.logger.error(long_msg)
+                raise CPIActionError(msg, long_msg)
+        # Mix all MACs (ports and provided)
+        for port in ports:
+            if port.address.lower() not in pxe_macs:
+                pxe_macs.append(port.address.lower())
+        return node, pxe_macs
+
+
     ##
     # Creates an Ironic server and waits until it's in running state
     #
@@ -284,129 +407,36 @@ class Create_VM(CPIAction):
         image_url, image_md5 = self._get_stemcell(config['stemcell'], stemcell_id)
         # Ironic definition
         ironic = Ironic(config['ironic'], self.logger)
-        pxe_macs = resource_pool.get('macs', [])
-        define = False
+        pxe_macs = [ m.lower() for m in resource_pool.get('macs', []) ]
+        # Store how the server was defined in the metadata
+        define = 0
+        # 1 > server initially in manageable state
+        # 0 > server initially in active state
+        # 2 > server defined by the CPI
         node = None
         if pxe_macs and 'ironic_params' in resource_pool:
             # Define the server in Ironic, to be deleted in delete_vm,
             # otherwise it will be kept as defined, but ready to use
-            define = True
-            ironic_params = resource_pool['ironic_params']
-            self.logger.debug("Defining server for agent id '%s' with params" % (agent_id))
-            try:
-                node = ironic.node.create(**ironic_params)
-            except ironic_exception.ClientException as e:
-                msg = "Error, cannot create server with macs='%s' and provided "
-                msg += "ironic_params for agent id '%s'" % (pxe_macs, agent_id)
-                long_msg = msg + ": %s" % (e)
-                self.logger.error(long_msg)
-                raise CPIActionError(msg, long_msg)
-            self.logger.debug("Created server id '%s' for agent id '%s'" % (node.uuid, agent_id))
-            # Define the MAC ports
-            for mac in pxe_macs:
-                port = {
-                    'address': mac,
-                    'node_uuid': node.uuid
-                }
-                try:
-                    ironic.port.create(**port)
-                except ironic_exception.ClientException as e:
-                    msg = "Error, cannot create port '%s' for server id '%s'" % (mac, node.uuid)
-                    long_msg = msg + ": %s. Deleting server" % (e)
-                    self.logger.error(long_msg)
-                    ironic.node.delete(node.uuid)
-                    raise CPIActionError(msg, long_msg)
+            define = 2
+            params = resource_pool['ironic_params']
+            node = self._define_node(ironic, agent_id, pxe_macs, params)
         else:
-            ports = []
-            # TODO: pagination with the nodes!
-            if pxe_macs:
-                # Get node by MAC(s)
-                self.logger.debug("Searching for server definition with MAC(s): %s" % (pxe_macs))
-                for mac in pxe_macs:
-                    try:
-                        port = ironic.port.get_by_address(mac)
-                        node = ironic.node.get(port.node_uuid)
-                        break
-                    except ironic_exception.ClientException as e:
-                        msg = "Not found a server with MAC '%s'" % (mac)
-                        long_msg = msg + ": %s" % (e)
-                        self.logger.warning(long_msg)
-                else:
-                    msg = "Error, server not found searching by MAC(s)"
-                    long_msg = msg + ": %s" % (pxe_macs)
-                    self.logger.error(long_msg)
-                    raise CPIActionError(msg, long_msg)
+            properties = resource_pool.get('ironic_properties', None)
+            node, pxe_macs = self._search_node(ironic, properties, pxe_macs, disk_locality)
+            if node.provision_state != 'available':
+                define = 1
+                # In this case we assume server is in manageable state
+                # so switch it to availabe by issuing provide
                 try:
-                    ports = ironic.node.list_ports(node.uuid)
+                    ironic.node.set_provision_state(node.uuid, 'provide')
                 except ironic_exception.ClientException as e:
-                    msg = "Error, cannot get MAC(s) address for server id '%s'" % (node.uuid)
+                    msg = "Error setting server id '%s' to status 'available'" % (node.uuid)
                     long_msg = msg + ": %s" % (e)
                     self.logger.error(long_msg)
                     raise CPIActionError(msg, long_msg)
             else:
-                ironic_properties = resource_pool.get('ironic_properties', None)
-                self.logger.debug("Searching for server with ironic_properties='%s'" % (ironic_properties))
-                try:
-                    nodes = ironic.node.list(
-                        maintenance=False,
-                        provision_state=self.settings.ironic_search_state,
-                        detail=True)
-                except ironic_exception.ClientException as e:
-                    msg = "Error, unable to get list of servers from Ironic"
-                    long_msg = msg + ": %s" % (e)
-                    self.logger.error(long_msg)
-                    raise CPIActionError(msg, long_msg)
-                for server in nodes:
-                    try:
-                        ports = ironic.node.list_ports(server.uuid)
-                    except ironic_exception.ClientException as e:
-                        msg = "Warning, cannot get MAC(s) address for server id '%s'" % (server.uuid)
-                        long_msg = msg + ": %s" % (e)
-                        self.logger.warning(long_msg)
-                        continue
-                    # Find a server based on the disk_id
-                    suitable = True
-                    macs = [ p.address for p in ports ]
-                    for disk_id in disk_locality:
-                        # Decode the device path from the uuid
-                        mac, device = self.settings.decode_disk(disk_id)
-                        if mac not in macs:
-                            msg = "Server not suitable for disk id '%s'" % (disk_id)
-                            long_msg = msg + ": it can not be attached to server id '%s'" % (server.uuid)
-                            self.logger.debug(long_msg)
-                            suitable = False
-                    continue if not suitable
-                    # Ok, the persistent disk is on this server
-                    if ironic_properties:
-                        # Compare the properties given by the manifest with the
-                        # properties of the node
-                        # properties': {u'memory_mb': 1, u'cpu_arch': u'x86_64', u'local_gb': 1, u'cpus': 1}
-                        try:
-                            for key in ironic_properties:
-                                if not greater_or_equal(server.properties[key], ironic_properties[key]):
-                                    break
-                            else:
-                                # Node found because all properties are >=
-                                node = server
-                                break
-                        except Exception as e:
-                            msg = "Server id '%s' not suitable with provided properties" % (node.uuid)
-                            long_msg = msg + ": %s" % (e)
-                            self.logger.warning(long_msg)
-                    else:
-                        # Node found
-                        node = server
-                        break
-                else:
-                    msg = "Error, not found server definition on Ironic matching the provided properties"
-                    long_msg = msg + ": %s" % (ironic_properties)
-                    self.logger.error(long_msg)
-                    raise CPIActionError(msg, long_msg)
-            # Mix all MACs (ports and provided)
-            for port in ports:
-                if port.address not in pxe_macs:
-                    pxe_macs.append(port.address)
-        # Check if disks can be attached to this server
+                define = 0
+        # Sanity check if disks can be attached to this server
         for disk_id in disk_locality:
             # Decode the device path from the uuid
             mac, device = self.settings.decode_disk(disk_id)
@@ -420,7 +450,8 @@ class Create_VM(CPIAction):
         # Create network configuration
         networks = self._define_networking(network_spec, pxe_macs)
         # Configdrive
-        configdrive_url = self._set_configdrive(config['metadata'], node.uuid, registry, networks)
+        configdrive_url = self._set_configdrive(
+            config['metadata'], node.uuid, registry, networks)
         # Do registry configuration
         self._set_registry(
             ironic, registry, node.uuid, agent_id, config['agent'],
@@ -436,7 +467,8 @@ class Create_VM(CPIAction):
             long_msg = msg + ": %s" % (e)
             self.logger.error(long_msg)
             raise CPIActionError(msg, long_msg)
-        self.logger.info("Provisioning server id '%s' with agent id '%s'" % (node.uuid, agent_id))
+        self.logger.info(
+            "Provisioning server id '%s' with agent id '%s'" % (node.uuid, agent_id))
         # Wait until node becomes active.
         # An active node means that node was deployed successfully is being
         # rebooted to boot using the stemcell. if it does not wait here,
