@@ -8,6 +8,7 @@ BOSH OpenStack Ironic CPI
 from __future__ import unicode_literals
 
 import re
+import time
 
 
 
@@ -42,14 +43,14 @@ class CPISettings(object):
         self.ironic_search_state = 'manageable'
 
     def encode_disk(self, mac, device, size):
-        disk_id = mac.replace(':','')
-        disk_id = disk_id + '-' + device.replace('/dev/', '', 1).replace('/', '-')
+        disk_id = mac.lower().replace(':','')
+        disk_id = device.replace('/dev/', disk_id + '-', 1)
         disk_id = str(int(time.time()*10)) + '-' + disk_id
         return disk_id
 
     def decode_disk(self, disk_id):
         t, mac, d = disk_id.split('-', 2)
         macaddr = ':'.join([mac[i:i+2] for i in range(0, len(mac), 2)])
-        device = '/dev/' + d.replace('-', '/')
+        device = '/dev/' + d
         return (macaddr, device)
 

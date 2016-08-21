@@ -51,7 +51,7 @@ class Attach_Disk(CPIAction):
         try:
             node = ironic.node.get(vm_cid)
             ports = ironic.node.list_ports(vm_cid)
-            macs = [ p.address for p in ports ]
+            macs = [ p.address.lower() for p in ports ]
             if mac not in macs:
                 msg = "Disk id '%' cannot be attached to a different server" % (disk_id)
                 long_msg = msg + ": %s" % (vm_cid)
@@ -77,16 +77,19 @@ class Attach_Disk(CPIAction):
             self.logger.error(long_msg)
             raise CPIActionError(msg, long_msg)
         # Add disk to metadata
-        metadata_item = {
-            'op': "add",
-            'value': disk_id,
-            'path': "/instance_info/disks"
-        }
-        self.logger.debug("Adding disk id '%s' to server's id '%s' metadata" % (disk_id, vm_cid))
         try:
+            disks = node.instance_info['disks']
+            if disk_id in disks:
+                msg = "Server '%s' has attached the disk" % (vm_cid)
+                long_msg = msg + ": %s" % (disk_id)
+                self.logger.warning(long_msg)
+            else:
+                disks.append(disk_id)
+            metadata_item = {'op': "replace", 'path': "/instance_info/disks", 'value': disks }
+            self.logger.debug("Adding disk id '%s' to server's id '%s' metadata" % (disk_id, vm_cid))
             ironic.node.update(vm_cid, [metadata_item])
         except ironic_exception.ClientException as e:
-            msg = "Error updating server's id '%s' metadata" % (vm_cid)
+            msg = "Error updating server id '%s' metadata disks" % (vm_cid)
             long_msg = msg + ": %s" % (e)
             self.logger.error(long_msg)
             raise CPIActionError(msg, long_msg)

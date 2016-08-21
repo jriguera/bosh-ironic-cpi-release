@@ -51,7 +51,7 @@ class Create_Disk(CPIAction):
             raise CPIActionError(msg, long_msg)
         # Create diskid by encoding the mac. Useful to decode in
         # attach and detach disk functions
-        disk_id = self.settings.encode_disk(mac, device, size)
+        disk_id = self.settings.encode_disk(mac.lower(), device, size)
         self.logger.debug("Created disk '%s'" % (disk_id))
         return disk_id
 
