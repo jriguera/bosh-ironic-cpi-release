@@ -46,6 +46,13 @@ properties:
   ironic_cpi.logging:
     description: Enable log file with the level indicated
     default: DEBUG
+  ironic_cpi.clean:
+    description: Run the cleaning steps when node is deleted
+    default: False
+  ironic_cpi.clean_steps:
+    description: Ironic cleaning steps when node is deleted
+    example: [{'interface': 'deploy', 'step': 'erase_devices'}]
+    default: [{'interface': 'deploy', 'step': 'erase_devices_metadata'}]
 
   ironic_cpi.repository_stemcell_type:
     description: Type of repository to store the images (required) 
