@@ -62,7 +62,7 @@ class Configdrive(object):
                 index = str(counter)
                 self.meta_data['public-keys'][index] = {'openssh-key': key}
                 counter += 1
-	else:
+        else:
             self.meta_data['public-keys']['0'] = {'openssh-key': ''}
 
 
@@ -100,7 +100,7 @@ class Configdrive(object):
         except RepositoryError as e:
             msg = "Error accessing '%s' on repository: %s" % (self.node_uuid, e)
             self.logger.error(msg)
-            raise ConfigDriveError(msg)
+            raise ConfigdriveError(msg)
 
 
     def create(self, repository, create_files=True):
@@ -110,7 +110,8 @@ class Configdrive(object):
             tmp_dir_base = os.path.join(tmp_dir,'ec2', 'latest')
             os.makedirs(tmp_dir_base)
             if create_files:
-                repository.mkdir(self.node_uuid + '/ec2/latest')
+                if not repository.exists(self.node_uuid + '/ec2/latest/'):
+                    repository.mkdir(self.node_uuid + '/ec2/latest')
             # user-data.json
             user_data_tmp_file = os.path.join(tmp_dir_base,'user-data')
             cfgdrive_user_json = json.dumps(
@@ -139,15 +140,15 @@ class Configdrive(object):
         except ironic_exception.ClientException as e:
             msg = "Error creating configdrive volume %s" % (e)
             self.logger.error(msg)
-            raise ConfigDriveError(msg)
+            raise ConfigdriveError(msg)
         except RepositoryError as e:
             msg = "Cannot save configdrive '%s' in the repository: %s" % (self.configdrive_id, e)
             self.logger.error(msg)
-            raise ConfigDriveError(msg)
+            raise ConfigdriveError(msg)
         except Exception as e:
             msg = "%s: %s" % (type(e).__name__, e)
             self.logger.error(msg)
-            raise ConfigDriveError(msg)
+            raise ConfigdriveError(msg)
         finally:
             if tmp_dir:
                 shutil.rmtree(tmp_dir)
