@@ -1,0 +1,79 @@
+#!/bin/bash
+
+# -------------------------------------------------------------------
+# Licensed to the Apache Software Foundation (ASF) under one
+# or more contributor license agreements.  See the NOTICE file
+# distributed with this work for additional information
+# regarding copyright ownership.  The ASF licenses this file
+# to you under the Apache License, Version 2.0 (the
+# "License"); you may not use this file except in compliance
+# with the License.  You may obtain a copy of the License at
+#
+#   http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing,
+# software distributed under the License is distributed on an
+# "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+# KIND, either express or implied.  See the License for the
+# specific language governing permissions and limitations
+# under the License.
+#
+# Original Source:
+# https://github.com/logsearch/logsearch-boshrelease
+# -------------------------------------------------------------------
+
+set -e # exit immediately if a simple command exits with a non-zero status
+set -u # report the usage of uninitialized variables
+
+# Setup env vars and folders for the ctl script
+source /var/vcap/jobs/webdav_metadata_registry/helpers/ctl_setup.sh 'webdav_metadata_registry' 'nginx-lua'
+
+
+registry() {
+    local state=$1
+
+    if [ "$state" == "enable" ]; then
+        # Create foldes to store the metadata (see registry vhost configuration) ...
+        for d in "registry" "registry/metadata"; do
+            mkdir -p ${STORE_DIR}/${d}
+            chown vcap:vcap ${STORE_DIR}/${d}
+            chmod 775 ${STORE_DIR}/${d}
+        done
+        ln -s $JOB_DIR/config/sites/registry.conf $JOB_DIR/config/enabled/registry.conf
+    else
+        rm $JOB_DIR/config/enabled/registry.conf
+    fi
+}
+
+repository() {
+    local state=$1
+
+    if [ "$state" == "enable" ]; then
+        # Create foldes to store the stemcells (see repository vhost configuration) ...
+        for d in "repository" "repository/images" "repository/deploy"; do
+            mkdir -p ${STORE_DIR}/${d}
+            chown vcap:vcap ${STORE_DIR}/${d}
+            chmod 775 ${STORE_DIR}/${d}
+        done
+        ln -s $JOB_DIR/config/sites/repository.conf $JOB_DIR/config/enabled/repository.conf
+    else
+        rm $JOB_DIR/config/enabled/repository.conf
+    fi
+}
+
+
+control() {
+    local vhosts="$1"
+
+    mkdir -p $JOB_DIR/config/enabled
+    chown vcap:vcap $JOB_DIR/config/enabled
+    chmod 775 $JOB_DIR/config/enabled
+
+    rm -f $JOB_DIR/config/enabled/*.conf
+    for vhost in ${vhosts}; do
+        ${vhost} "enable"
+    done
+}
+
+control "${VHOSTS}"
+
