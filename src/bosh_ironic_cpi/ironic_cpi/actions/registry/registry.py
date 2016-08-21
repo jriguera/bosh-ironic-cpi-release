@@ -22,7 +22,7 @@ class RegistryError(Exception):
     """
     Base class for all Registry Exceptions
     """
-    
+
     def __init__(self, message):
         self.message = message
 
@@ -177,7 +177,7 @@ class Registry(object):
             msg = "Error '%s': %s" % (e.__class__.__name__, str(e))
             self.logger.error(msg)
             raise RegistryError(msg)
-        if req.status_code != requests.codes.ok:
+        if req.status_code not in [requests.codes.ok, requests.codes.no_content]:
             msg = "HTTP DELETE '%s': %s" % (self.endpoint, req.status_code)
             self.logger.error(msg)
             raise RegistryError(msg)
@@ -190,7 +190,7 @@ class Registry(object):
                 msg = "Error '%s': %s" % (e.__class__.__name__, str(e))
                 self.logger.error(msg)
                 raise RegistryError(msg)
-            if req.status_code != requests.codes.ok:
+            if req.status_code not in [requests.codes.ok, requests.codes.no_content]:
                 msg = "HTTP DELETE '%s': %s" % (url, req.status_code)
                 self.logger.error(msg)
                 raise RegistryError(msg)
