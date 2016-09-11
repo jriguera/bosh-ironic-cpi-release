@@ -1,2 +1,2 @@
-requests==2.10.0
-python-ironicclient==1.6.0
+requests==2.11.1
+python-ironicclient==1.7.0
