@@ -16,7 +16,6 @@ from pip.download import PipSession
 from pip.req import parse_requirements
 
 
-
 here = path.abspath(path.dirname(__file__))
 
 # Get the long description from the README file
