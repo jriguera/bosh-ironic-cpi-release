@@ -23,6 +23,7 @@ except ImportError:
 from ironic_cpi.action import CPIAction
 from ironic_cpi.action import CPIActionError
 from ironic_cpi.actions.utils.ironic import connect as Ironic
+from ironic_cpi.actions.utils.ironic import wait_for_state
 from ironic_cpi.actions.utils.utils import boolean, is_macaddr, greater_or_equal
 from ironic_cpi.actions.registry.registry import Registry
 from ironic_cpi.actions.registry.registry import RegistryError
@@ -325,6 +326,7 @@ class Create_VM(CPIAction):
                 self.logger.error(long_msg)
                 raise CPIActionError(msg, long_msg)
             for server in nodes:
+                self.logger.debug("Trying serverid='%s'" % (server.uuid))
                 try:
                     ports = ironic.node.list_ports(server.uuid)
                 except ironic_exception.ClientException as e:
@@ -371,6 +373,7 @@ class Create_VM(CPIAction):
                 long_msg = msg + ": %s" % (properties)
                 self.logger.error(long_msg)
                 raise CPIActionError(msg, long_msg)
+        self.logger.info("Selected serverid='%s'" % (node.uuid))
         # Mix all MACs (ports and provided)
         for port in ports:
             if port.address.lower() not in pxe_macs:
@@ -434,6 +437,10 @@ class Create_VM(CPIAction):
                     long_msg = msg + ": %s" % (e)
                     self.logger.error(long_msg)
                     raise CPIActionError(msg, long_msg)
+                # wait until available
+                wait_for_state(self.logger, ironic, node.uuid,
+                    self.settings.ironic_sleep_times,
+                    self.settings.ironic_sleep_seconds)
             else:
                 define = 0
         # Sanity check if disks can be attached to this server

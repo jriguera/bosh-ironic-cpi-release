@@ -11,6 +11,7 @@ import time
 from ironic_cpi.action import CPIAction
 from ironic_cpi.action import CPIActionError
 from ironic_cpi.actions.utils.ironic import connect as Ironic
+from ironic_cpi.actions.utils.ironic import wait_for_state
 from ironic_cpi.actions.utils.utils import boolean
 from ironic_cpi.actions.registry.registry import Registry
 from ironic_cpi.actions.registry.registry import RegistryError
@@ -79,26 +80,6 @@ class Delete_VM(CPIAction):
             #raise CPIActionError(msg, long_msg)
 
 
-    def _wait_for_state(self, ironic, uuid, state='available'):
-        # Sort of timeout for waiting in ironic loops. 30s x 40 is the limit
-        ironic_timer = self.settings.ironic_sleep_times
-        ironic_sleep = self.settings.ironic_sleep_seconds
-        while ironic_timer > 0:
-            status = ironic.node.states(uuid).provision_state
-            if status == state:
-                self.logger.debug("Server id '%s' status '%s'" % (uuid, status))
-                break
-            self.logger.debug("Server id '%s' status '%s', waiting" % (uuid, status))
-            time.sleep(ironic_sleep)
-            ironic_timer -= 1
-        else:
-            msg = "Server id '%s' did not become '%s' after %d s."
-            msg = msg % (uuid, state, (self.settings.ironic_sleep_times * ironic_sleep))
-            long_msg = msg + ": Timeout Error"
-            self.logger.error(long_msg)
-            raise CPIActionError(msg, long_msg)
-
-
     ##
     # Delete the Server.
     # This method will be called while the VM still has persistent disks 
@@ -143,7 +124,9 @@ class Delete_VM(CPIAction):
             self.logger.debug("Deleting server id '%s'" % (vm_cid))
             try:
                 ironic.node.set_provision_state(vm_cid, 'deleted')
-                self._wait_for_state(ironic, vm_cid, 'available')
+                wait_for_state(self.logger, ironic, vm_cid,
+                    self.settings.ironic_sleep_times,
+                    self.settings.ironic_sleep_seconds)
             except ironic_exception.ClientException as e:
                 msg = "Error performing cleaning of server id '%s'" % (vm_cid)
                 long_msg = msg + ": %s" % (e)
@@ -164,11 +147,20 @@ class Delete_VM(CPIAction):
                 raise CPIActionError(msg, long_msg)
             try:
                 ironic.node.set_provision_state(vm_cid, 'manage')
-                self._wait_for_state(ironic, vm_cid, 'manageable')
+                wait_for_state(self.logger, ironic, vm_cid,
+                    self.settings.ironic_sleep_times,
+                    self.settings.ironic_sleep_seconds,
+                    'manageable')
                 ironic.node.set_provision_state(vm_cid, 'clean', cleansteps=cleansteps)
-                self._wait_for_state(ironic, vm_cid, 'manageable')
+                wait_for_state(self.logger, ironic, vm_cid,
+                    self.settings.ironic_sleep_times,
+                    self.settings.ironic_sleep_seconds,
+                    'manageable')
                 ironic.node.set_provision_state(vm_cid, 'provide')
-                self._wait_for_state(ironic, vm_cid, 'available')
+                wait_for_state(self.logger, ironic, vm_cid,
+                    self.settings.ironic_sleep_times,
+                    self.settings.ironic_sleep_seconds,
+                    'available')
             except ironic_exception.ClientException as e:
                 msg = "Error cleaning server id '%s'" % (vm_cid)
                 long_msg = msg + ": %s" % (e)
