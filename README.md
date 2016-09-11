@@ -32,7 +32,7 @@ Deployment
   not set
 ```
 
-BOSH view:
+BOSH perspective:
 
 ```
 $ bosh instances
@@ -54,7 +54,7 @@ Task 25720 done
 Instances total: 1
 ```
 
-Ironic view of the instances:
+Ironic point of view of the instances:
 
 ```
 $ ironic node-list
@@ -87,7 +87,12 @@ $ ironic node-list
   in order to define a standard way to manage physical servers using Ironic as backend.
   Apart of having provisioning tools (Ansible, or other programs) using the Ironic 
   HTTP API to manage physical servers, this will bring the oportunity of managing
-  the physical servers in a centralized way with Ironic.
+  the physical servers in a centralized way with Ironic. Ironic supports multiple
+  Conductors (or even by using the concept of `chassis`) it is easy to use them
+  as Availability Zones within BOSH.
+
+* Be able to manage a pool of physical servers in a awesome way (also really
+  slow way :-)
 
 
 This project is made with Python ... I know most of the CPIs are written in
