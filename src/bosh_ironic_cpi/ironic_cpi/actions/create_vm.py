@@ -120,7 +120,7 @@ class Create_VM(CPIAction):
                             mac = m
                             break
             if not mac:
-                # It needs an MAC addres so, get the #counter position from 
+                # It needs an MAC addres so, get the #counter position from
                 # the original mac list
                 try:
                     mac = macs[counter]
@@ -296,16 +296,22 @@ class Create_VM(CPIAction):
                 try:
                     port = ironic.port.get_by_address(mac)
                     node = ironic.node.get(port.node_uuid)
-                    break
+                    if node.provision_state != 'available':
+                        continue
+                    else:
+                        break
                 except ironic_exception.ClientException as e:
                     msg = "Not found a server with MAC '%s'" % (mac)
                     long_msg = msg + ": %s" % (e)
                     self.logger.warning(long_msg)
             else:
-                msg = "Error, server not found searching by MAC(s)"
+                msg = "Error, server not found, searching by MAC(s)"
                 long_msg = msg + ": %s" % (pxe_macs)
                 self.logger.error(long_msg)
                 raise CPIActionError(msg, long_msg)
+            # It is a list of macs, it does not mean they are from the same
+            # server!
+            pxe_macs = []
             try:
                 ports = ironic.node.list_ports(node.uuid)
             except ironic_exception.ClientException as e:
@@ -518,4 +524,3 @@ class Create_VM(CPIAction):
 
 
 # EOF
-
