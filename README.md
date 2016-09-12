@@ -151,6 +151,14 @@ Before running this sofware, take into account:
   one needs to define VLANs (besides the option of having OpenStack Neutron
   controlling the physical switch ports) for some NIC(s).
 
+* Limited support for persistent disks. Persistent disks are local to each server.
+  A persistent disk device (usually `/dev/sdc`) cannot be attached or moved to a
+  different server than the one where it was originally created, because is
+  physically attached to the server. If a job uses a persistent disk and a pool
+  of  servers is defined, the CPI will select always the server where the disk
+  lives: the MAC address of the server is encoded in the disk id, that is how
+  to setup the nexus between persistent disk and server.
+
 * LVM and/or RAID are not supported. LVM would be nice, but I think it will
   require a lot of changes in BOSH Agent which makes no sense to enable support
   in a ephemeral world. RAID setup could be managed by Ironic if the servers
