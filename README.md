@@ -1,9 +1,9 @@
 # bosh-ironic-cpi
 
-A Bosh CPI (Cloud Provider Interface) to manage baremetal servers via Ironic 
-(Standalone mode, without the rest of OpenStack components). The idea is make 
-the most of OpenStack Ironic to provide an alternative way to deploy physical 
-servers with BOSH. If you do not know about how amazing is BOSH, have a look 
+A Bosh CPI (Cloud Provider Interface) to manage baremetal servers via Ironic
+(Standalone mode, without the rest of OpenStack components). The idea is make
+the most of OpenStack Ironic to provide an alternative way to deploy physical
+servers with Bosh. If you do not know about how amazing is Bosh, have a look
 here: http://bosh.io/
 
 Tested using https://github.com/jriguera/ansible-ironic-standalone but it should
@@ -19,7 +19,7 @@ Config
 
 Director
   Name       ironic-bosh
-  URL        https://10.100.0.1:25555
+  URL        https://10.100.0.10:25555
   Version    1.3262.9.0 (00000000)
   User       admin
   UUID       1c9788b5-46c9-4a11-bc15-9963c438dfb5
@@ -32,11 +32,11 @@ Deployment
   not set
 ```
 
-BOSH perspective:
+Bosh perspective:
 
 ```
 $ bosh instances
-https://10.230.0.31:25555
+https://10.100.0.10:25555
 Acting as user 'admin' on deployment 'carbon-c-relay' on 'ironic-bosh'
 
 Director task 25720
@@ -46,7 +46,7 @@ Task 25720 done
 +------------------------------------------------+---------+------+---------+---------------+
 | Instance                                       | State   | AZ   | VM Type | IPs           |
 +------------------------------------------------+---------+------+---------+---------------+
-| test/0 (e633088f-11a9-4ee6-b26f-2388f29d2d1d)* | running | dogo | pool-01 | 10.0.0.3      |
+| test/0 (e633088f-11a9-4ee6-b26f-2388f29d2d1d)* | running | dogo | pool    | 10.0.0.3      |
 +------------------------------------------------+---------+------+---------+---------------+
 
 (*) Bootstrap node
@@ -74,39 +74,36 @@ $ ironic node-list
 
 # Motivations
 
-* Hack "Day" (actually months) project to learn about BOSH internals. One of 
+* Hack "Day" (actually months) project to learn about Bosh internals. One of
   the first ideas was about creating a smart CPI capable of proxying some requests
-  to make use of physical hardware. This could be a different approach to have a CPI 
-  able to deploy VMs and physical servers using the same BOSH Director. One could 
-  have VMware/OpenStack Nova for VMs and Ironic for special jobs (like Cloud Foundry 
-  runners). The CPI would delegate the calls on the other one for VM management. 
-  Anyway, there are plans to support multi-CPI in BOSH, so I think this project will
+  to make use of physical hardware. This could be a different approach to have a CPI
+  able to deploy VMs and physical servers using the same Bosh Director. One could
+  have VMware/OpenStack Nova for VMs and Ironic for special jobs (like Cloud Foundry
+  runners). The CPI would delegate the calls on the other one for VM management.
+  Anyway, there are plans to support multi-CPI in Bosh, so I think this project will
   be focused only on Ironic.
 
 * Make most of the [Ironic Standalone project](https://github.com/jriguera/ansible-ironic-standalone),
   in order to define a standard way to manage physical servers using Ironic as backend.
-  Apart of having provisioning tools (Ansible, or other programs) using the Ironic 
+  Apart of having provisioning tools (Ansible, or other programs) using the Ironic
   HTTP API to manage physical servers, this will bring the oportunity of managing
   the physical servers in a centralized way with Ironic. Ironic supports multiple
   Conductors (or even by using the concept of `chassis`) it is easy to use them
-  as Availability Zones within BOSH.
-
-* Be able to manage a pool of physical servers in a awesome way (also really
-  slow way :-)
+  as Availability Zones within Bosh.
 
 
 This project is made with Python ... I know most of the CPIs are written in
-Ruby or Golang, so why Python? ... why not? It is a great language which does 
-not need to be compiled, OpenStack is made with it and its libraries provide 
-the functionality I needed (e.g. to create ConfigDrive(s)). Also, having a CPI 
-in another language made with a different approach helps to define a way to 
-document and understand the functionalities. The architecture of the source 
-code `src/bosh_ironic_cpi` was created in a flexible way to be re-used, to 
-write a new CPI, one only needs to create or change the `CPIAction` sub-classes 
-defined in `src/bosh_ironic_cpi/ironic_cpi/actions/` folder, each one on each 
-file. Each class will be registered automatically and the exceptions and/or 
-returns will be transformed in JSON format and write via *STDOUT/STDERR*. 
-This was a hacking project, made to understand the BOSH internal workflow, 
+Ruby or Golang, so why Python? ... why not? It is a great language which does
+not need to be compiled, OpenStack is made with it and its libraries provide
+the functionality I needed (e.g. to create ConfigDrive(s)). Also, having a CPI
+in another language made with a different approach helps to define a way to
+document and understand the functionalities. The architecture of the source
+code `src/bosh_ironic_cpi` was created in a flexible way to be re-used, to
+write a new CPI, one only needs to create or change the `CPIAction` sub-classes
+defined in `src/bosh_ironic_cpi/ironic_cpi/actions/` folder, each one on each
+file. Each class will be registered automatically and exceptions or returns will
+be transformed in JSON format and write via **stdout** and **stderr**.
+This was a hacking project, made to understand the Bosh internal workflow,
 I have not got enough time to focus on writing the (needed) tests :-/
 
 
@@ -136,7 +133,7 @@ Before running this sofware, take into account:
   stemcell including those drivers.
 
 * A physical server usually has several NICs available, but maybe some of them
-  are not connected or not needed. When BOSH Agent runs, it ensures all the
+  are not connected or not needed. When Bosh Agent runs, it ensures all the
   interfaces defined on the server must have an IP, if an NIC has no IP address,
   Bosh Agent fails. To overcome this limitation I have decided to assign an IP
   of the loopback local range `127.0.0.100/24` to the non used interfaces.
@@ -147,7 +144,7 @@ Before running this sofware, take into account:
   physical worl, most of the times is desirable (unless there are a lot of
   servers and by taking aggregations one can assume losing some of them). In
   order to provide bonding, stemcells must be created with the proper settings
-  and BOSH Agent functionality should be changed. A similar issue appears if
+  and Bosh Agent functionality should be changed. A similar issue appears if
   one needs to define VLANs (besides the option of having OpenStack Neutron
   controlling the physical switch ports) for some NIC(s).
 
@@ -160,7 +157,7 @@ Before running this sofware, take into account:
   to setup the nexus between persistent disk and server.
 
 * LVM and/or RAID are not supported. LVM would be nice, but I think it will
-  require a lot of changes in BOSH Agent which makes no sense to enable support
+  require a lot of changes in Bosh Agent which makes no sense to enable support
   in a ephemeral world. RAID setup could be managed by Ironic if the servers
   are predefined.
 
@@ -168,43 +165,41 @@ Before running this sofware, take into account:
 
 # Jobs defined in the release
 
-
-This BOSH Release has two jobs. **ironic_cpi**, the important one, is the
-implementation of the Ironic CPI. **webdav_metadata_registry** is an optional
-job implementing the BOSH Registry API in Lua for Nginx. Making the most of the
+The Bosh Release consist of two jobs. The core, called **ironic_cpi**, is the
+implementation of the Ironic CPI and **webdav_metadata_registry** is an optional
+job implementing the Bosh Registry API in Lua for Nginx. Making the most of the
 WebDAV protocol (which is already needed to manage the Config-Drive Metatata
 in Ironic Standalone) I have decided to create a simple implementation of the
 Registry API to delegate in WebDAV as backend.
 
-BOSH Registry stores a JSON *settings* needed by the Bosh Agent to carry on
-with the configuration the VM. These JSON seetings are really simple, no
+Bosh Registry stores the *settings* needed by the Bosh Agent to carry on
+with the configuration the VM. These settings are a simple JSON file, no
 database is needed, it is possible to use WebDAB as storage already needed
-for the stemcells. The Lua implementation just does internal redirections to 
-WebDAV metadata location, doing some checks and creating the JSON file. 
-There are two ideas behing this implementation:
+for the stemcells. The Lua implementation parses each request and does internal
+redirections to WebDAV metadata location, doing some checks and creating the
+JSON file. There are two ideas behing this implementation:
 
-  * To run this Lua program in a external NGINX server, the one which provides
-  the ConfigDrive Metadata, and storage for the server images. Ironic 
-  Config-Drive Metadata and Stemcell storage can live in the same server
-  as the Registry API, centralizing all BOSH Agent specifications for every
-  node in the same repository. The implementation is already included in 
-  https://github.com/jriguera/ansible-ironic-standalone, just run the
+  * The Registry API server can live in the same WebDAV service as Ironic
+  Config-Drive **Metadata** and Stemcell **Images** storage, centralizing all
+  Bosh Agent specifications for every node in the same repository. The
+  implementation is already included in https://github.com/jriguera/ansible-ironic-standalone, just run the
   `setup-ironic-bosh-registry.yml` playbook after changing/defining the
-  Registry credentials of the BOSH Director.
-  
-  * Run the WebDAV inside BOSH Director VM providing Stemcell and Config-Drive
+  Registry credentials of the Bosh Director.
+  [Instructions](https://github.com/jriguera/ansible-ironic-standalone#about-bosh).
+
+  * Run the WebDAV inside Bosh Director VM providing Stemcell/Image and Config-Drive
   Metadata storage together with the Registry API. If you are running Ironic
-  as part of a big OpenStack deployment, this is the way to use this CPI.
-  For now, it only supports WebDAV storage repositories (no Glance) for 
-  Stemcells and Ironic Config-Drive.
+  as part of a big OpenStack deployment, this is the way to use this CPI for now,
+  because it only supports WebDAV storage repositories for Stemcells/Images and
+  Ironic Config-Drive data (sorry no Glance, Swift  or S3).
 
 
-## Example set-up and configuration
+## Example Bosh-Init set-up and configuration
 
-Use BOSH Init as described in https://bosh.io/docs/init.html . Remember BOSH
-Init will use two CPIs, one just to deploy the BOSH Director VM and the `ironic_cpi`
+Use Bosh Init as described in https://bosh.io/docs/init.html . Remember, Bosh-Init
+will use two CPIs, one just to deploy the Bosh Director VM and the `ironic_cpi`
 to be included on it. Follow the instructions for the platform you want to
-run the BOSH Director VM and change the settings below.
+run the Bosh Director VM and change the settings below.
 
 
 First of all, you  have to add the `ironic_cpi` release to the releases section
@@ -223,7 +218,7 @@ releases:
   sha1: 9b5a44903b75fcf31d12d735769dffdc40810248
 ```
 
-Now, add the new jobs to the section `templates` from this release. Only 
+Now, add the new jobs to the section `templates` from this release. Only
 one `*_cpi` job is needed in this section:
 
 ```
@@ -241,11 +236,11 @@ jobs:
   - {name: webdav_metadata_registry, release: ironic_cpi}
 ```
 
-Remember, the job *webdav_metadata_registry* is not needed if you are using 
+Remember, the job *webdav_metadata_registry* is not needed if you are using
 [Ironic Standalone](https://github.com/jriguera/ansible-ironic-standalone) and
 it was deployed with [setup-ironic-boshregistry.yml](https://github.com/jriguera/ansible-ironic-standalone/blob/master/setup-ironic-boshregistry.yml)
-following [these instructions](https://github.com/jriguera/ansible-ironic-standalone#about-bosh),
-otherwise just include it.
+following [the instructions](https://github.com/jriguera/ansible-ironic-standalone#about-bosh),
+otherwise just include both jobs.
 
 
 In the director section, make sure you have changed the `cpi_job` to point
@@ -266,7 +261,7 @@ to *ironic_cpi* job/template:
 ```
 
 
-At the same indentation level, define the configuration properties:
+At the same indentation level, define the main CPI configuration properties:
 
 ```
     ironic_cpi:
@@ -281,18 +276,20 @@ At the same indentation level, define the configuration properties:
 
 Change `IRONIC-API` with the IP address or dns name of Ironic API. If you are
 not using Ironic Standalone (so also *webdav_metadata_registry* job), put here
-the IP of the Registry specified in `registry.host` item.
+the IP of the Registry specified in `registry.host` item. `metadata_publickeys`
+is a list of SSH Publics keys which will be incorporated to vcap user in the
+servers deployed.
 
-
-Done!, now just deploy bosh: `bosh-init deploy <manifest.yaml>`, it will take
+Done!, now just run Bosh-Init: `bosh-init deploy <manifest.yaml>`, it will take
 half an hour, so for a coffee! There are examples of manifests for different
 platforms in the `checks` folder.
 
 
 ## Cloud-Config setup
 
-Before starting using the new BOSH Director, you should load a cloud-config definition
-to describe the infrastructure, example:
+Focusing in Bosh v2 style manifests, before starting using the new Bosh Director,
+you have to upload a cloud-config definition to describe the infrastructure,
+this is an example:
 
 ```
 azs:
@@ -334,13 +331,14 @@ vm_types:
         ipmi_password: "pass"
         deploy_kernel: "file:///var/lib/ironic/http/deploy/coreos_production_pxe.vmlinuz"
         deploy_ramdisk: "file:///var/lib/ironic/http/deploy/coreos_production_pxe_image-oem.cpio.gz"
-- name: mac-03
+- name: e4-1f-13-e6-3f-42
   cloud_properties:
-    macs: ['e4:1f:13:e6:3d:38']
-- name: pool-01
+    macs: ['e4:1f:13:e6:3f:42']
+- name: pool
   cloud_properties:
     ironic_properties:
       local_gb: 500
+      cpus: 16
 
 disk_types:
 - name: default
@@ -378,12 +376,92 @@ compilation:
   network: compilation
 ```
 
+The `azs` section is where Availability Zones are defined.
+
+
+### `vm_types` section can be used in 3 different ways
+
+* **To specifically define a server in Ironic**, such server can be referenced
+  in the deployment manifest. You can define as many servers as you need, and,
+  in the same way Bosh CPI defines each server, it will be deleted from Ironic
+  when it will be no longer needed in the deployment manifest. All the
+  configuration remains in Bosh Cloud-Config.
+  ```
+  - name: pe-prod-dogo-lab-03
+    cloud_properties:
+      macs: ['e4:1f:13:e6:3d:38', 'e4:1f:13:e6:3d:3a', '00:0a:cd:26:f2:1c', '00:0a:cd:26:f2:1b']
+      ironic_params:
+        driver: "agent_ipmitool"
+        driver_info:
+          ipmi_address: "10.0.0.5"
+          ipmi_username: "admin"
+          ipmi_password: "pass"
+          deploy_kernel: "file:///var/lib/ironic/http/deploy/coreos_production_pxe.vmlinuz"
+          deploy_ramdisk: "file:///var/lib/ironic/http/deploy/coreos_production_pxe_image-oem.cpio.gz"
+  ```
+  Two parameters must be defined in cloud properties: **macs** a list of all
+  the MAC addresses of the physical server (even if they will not be used,
+  in such case, an IP of the local loopback range will be assigned, see
+  *General  considerations* section above) and **ironic_params** is a dictionary
+  of parameters for Ironic, basically the IPMI settings of the physical server
+  and the image used to deploy the stemcell. `ironic_params` values depends on
+  the physical server and Ironic configuration, it can include all the
+  parameters supported by the [ironic.node.create](http://docs.openstack.org/developer/python-ironicclient/api/ironicclient.v1.node.html) API method such as: `chassis_uuid`, `driver`, `driver_info`,
+  `extra`, `uuid`, `properties`, `name`, `network_interface`, `resource_class`.
+  The example configuration here should be enough for most of the cases, just
+  change the MACs and the IPMI parameters acording to your server, for more
+  information, check https://github.com/openstack/python-ironicclient/blob/master/ironicclient/v1/node.py
+  and https://github.com/jriguera/ansible-ironic-standalone
+
+* **To reference a predefined server by MAC**. In this case, Bosh CPI will perform
+  a search over all physical servers defined in Ironic which are in state *available*
+  (not in use). Specific parameters of the selected server are already defined in
+  Ironic (IPMI and driver_info settings) and Bosh CPI does not touch and know
+  them. When the server is not longer needed by Bosh, it will be put in *available*
+  state again, ready to be used. This mode is useful to target a specific server
+  for a deployment.
+  ```
+  - name: e4-1f-13-e6-3f-42
+    cloud_properties:
+      macs: ['e4:1f:13:e6:3f:42']
+  ```
+  Only one parameter is needed: **macs**, a list of macs to search the server
+  (or servers) pre-defined in Ironic. The first *available* server which
+  has one of the MACs will be used.
+
+* **To define a pool of pre-defined servers by hardware properties**. Similar to
+  the previous use case, but instead of searching by MAC, Bosh CPI will search
+  for a server which fits on the hardware properties required. The server has
+  to be in *manageable* state to be selected. By using [Ironic-Inspector](http://docs.openstack.org/developer/ironic-inspector/)
+  to automatically discover and define the new servers in Ironic, without human
+  intervention, they will become ready to use by Bosh CPI. Example:
+  ```
+  - name: pool
+    cloud_properties:
+      ironic_properties:
+        local_gb: 500
+        cpus: 16
+  ```
+  This will define a selection pool with two filters: `local_gb` wich will filter
+  servers with at least 500 GB of disk storage and `cpus` which will select
+  those ones with at least 16 cpus. The **ironic_properties** available are:
+  `memory_mb`, `cpu_arch`, `local_gb`, `cpus` which are the same properties
+  used by OpenStack Nova Scheduler as well the ones automatically defined
+  by Ironic Inspector. When server is no longer needed, Bosh CPI will move it
+  back to the pool.
+
+
+### `disk_types` section
+
+disks ....
 
 
 
-### Defining manually a pool of servers for cloud-config settings
+### Defining manually a pool of physical servers
 
-Normally this should be done using Ironic-Inspector ...
+Normally this should be done using Ironic-Inspector, but those are the Ironic
+commands to do it manually. Change the variables and properties according to
+each one:
 
 ```
 ############################ lab1
@@ -472,10 +550,17 @@ ironic node-list
 ```
 
 
-
-
-# Local Dev environment
+# Dev environment
 
 Run `bosh_prepare` to download the sources for the packages.
 
+## TODO
 
+* Write code tests
+* Find out how to support bonding on the Stemcells
+* Support for non defined NICs*
+* Create a specific stemcell for Ironic
+* VLANs support?*
+* Include RAID setup in predefined servers
+
+\* Changes in the Bosh Agent are required
