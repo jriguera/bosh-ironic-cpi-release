@@ -19,7 +19,7 @@ Config
 
 Director
   Name       ironic-bosh
-  URL        https://10.100.0.10:25555
+  URL        https://10.0.0.10:25555
   Version    1.3262.9.0 (00000000)
   User       admin
   UUID       1c9788b5-46c9-4a11-bc15-9963c438dfb5
@@ -36,7 +36,7 @@ Bosh perspective:
 
 ```
 $ bosh instances
-https://10.100.0.10:25555
+https://10.0.0.10:25555
 Acting as user 'admin' on deployment 'carbon-c-relay' on 'ironic-bosh'
 
 Director task 25720
@@ -46,7 +46,7 @@ Task 25720 done
 +------------------------------------------------+---------+------+---------+---------------+
 | Instance                                       | State   | AZ   | VM Type | IPs           |
 +------------------------------------------------+---------+------+---------+---------------+
-| test/0 (e633088f-11a9-4ee6-b26f-2388f29d2d1d)* | running | dogo | pool    | 10.0.0.3      |
+| test/0 (e633088f-11a9-4ee6-b26f-2388f29d2d1d)* | running | dogo | pool    | 10.0.0.250    |
 +------------------------------------------------+---------+------+---------+---------------+
 
 (*) Bootstrap node
@@ -70,6 +70,7 @@ $ ironic node-list
 +--------------------------------------+--------+--------------------------------------+-------------+--------------------+-------------+
 
 ```
+
 
 
 # Motivations
@@ -111,7 +112,6 @@ I have not got enough time to focus on writing the (needed) tests :-/
 # General considerations
 
 Before running this sofware, take into account:
-
 
 * Servers must be predefined on Ironic (as *manageable* state) or defined
   using the **ironic_params** properties. When the CPI runs, depending on the
@@ -194,12 +194,13 @@ JSON file. There are two ideas behing this implementation:
   Ironic Config-Drive data (sorry no Glance, Swift  or S3).
 
 
+
 ## Example Bosh-Init set-up and configuration
 
-Use Bosh Init as described in https://bosh.io/docs/init.html . Remember, Bosh-Init
-will use two CPIs, one just to deploy the Bosh Director VM and the `ironic_cpi`
-to be included on it. Follow the instructions for the platform you want to
-run the Bosh Director VM and change the settings below.
+Use Bosh Init as described in https://bosh.io/docs/init.html . Take into account,
+Bosh-Init will use two CPIs, one just to deploy the Bosh Director VM and the
+`ironic_cpi` to be included on it. Follow the instructions for the platform you
+want to run the Bosh Director VM and change the settings below.
 
 
 First of all, you  have to add the `ironic_cpi` release to the releases section
@@ -214,7 +215,7 @@ releases:
   url: https://bosh.io/d/github.com/cloudfoundry-incubator/bosh-vsphere-cpi-release?v=27
   sha1: 7b9cd2b47138b49cdf9c7329ec6d85324d572743
 - name: ironic_cpi
-  url: http://10.0.0.0/images/ironic_cpi-0+dev.13.tgz
+  url: https://github.com/jriguera/bosh-ironic-cpi-release/releases/download/v0.1.0/bosh-ironic_cpi-release-0.1.0.tgz
   sha1: 9b5a44903b75fcf31d12d735769dffdc40810248
 ```
 
@@ -236,7 +237,7 @@ jobs:
   - {name: webdav_metadata_registry, release: ironic_cpi}
 ```
 
-Remember, the job *webdav_metadata_registry* is not needed if you are using
+Remember, job *webdav_metadata_registry* is not needed if you are using
 [Ironic Standalone](https://github.com/jriguera/ansible-ironic-standalone) and
 it was deployed with [setup-ironic-boshregistry.yml](https://github.com/jriguera/ansible-ironic-standalone/blob/master/setup-ironic-boshregistry.yml)
 following [the instructions](https://github.com/jriguera/ansible-ironic-standalone#about-bosh),
@@ -259,7 +260,6 @@ to *ironic_cpi* job/template:
           - {name: admin, password: admin}
           - {name: hm, password: hm-password}
 ```
-
 
 At the same indentation level, define the main CPI configuration properties:
 
@@ -285,11 +285,12 @@ half an hour, so for a coffee! There are examples of manifests for different
 platforms in the `checks` folder.
 
 
+
 ## Cloud-Config setup
 
 Focusing in Bosh v2 style manifests, before starting using the new Bosh Director,
-you have to upload a cloud-config definition to describe the infrastructure,
-this is an example:
+you have to upload a cloud-config definition to describe and use the
+infrastructure. Given the following example:
 
 ```
 azs:
@@ -298,13 +299,15 @@ azs:
     availability_zone: dogo
 
 vm_types:
+
+# Define and use these servers in Ironic
 - name: pe-prod-dogo-lab-01
   cloud_properties:
     macs: ['e4:1f:13:e6:33:3c']
     ironic_params:
       driver: "agent_ipmitool"
       driver_info:
-        ipmi_address: "10.0.0.3"
+        ipmi_address: "10.100.0.3"
         ipmi_username: "admin"
         ipmi_password: "pass"
         deploy_kernel: "file:///var/lib/ironic/http/deploy/coreos_production_pxe.vmlinuz"
@@ -315,37 +318,44 @@ vm_types:
     ironic_params:
       driver: "agent_ipmitool"
       driver_info:
-        ipmi_address: "10.0.0.4"
+        ipmi_address: "10.100.0.4"
         ipmi_username: "admin"
         ipmi_password: "pass"
-        deploy_kernel: "file:///var/lib/ironic/http/deploy/coreos_production_pxe.vmlinuz"
-        deploy_ramdisk: "file:///var/lib/ironic/http/deploy/coreos_production_pxe_image-oem.cpio.gz"
+        deploy_kernel: "file:///var/lib/ironic/http/deploy/ctinyipa-master.vmlinuz"
+        deploy_ramdisk: "file:///var/lib/ironic/http/deploy/tinyipa-master.gz"
 - name: pe-prod-dogo-lab-03
   cloud_properties:
     macs: ['e4:1f:13:e6:3d:38', 'e4:1f:13:e6:3d:3a', '00:0a:cd:26:f2:1c', '00:0a:cd:26:f2:1b']
     ironic_params:
       driver: "agent_ipmitool"
       driver_info:
-        ipmi_address: "10.0.0.5"
+        ipmi_address: "10.100.0.5"
         ipmi_username: "admin"
         ipmi_password: "pass"
-        deploy_kernel: "file:///var/lib/ironic/http/deploy/coreos_production_pxe.vmlinuz"
-        deploy_ramdisk: "file:///var/lib/ironic/http/deploy/coreos_production_pxe_image-oem.cpio.gz"
+        deploy_kernel: "file:///var/lib/ironic/http/deploy/ctinyipa-master.vmlinuz"
+        deploy_ramdisk: "file:///var/lib/ironic/http/deploy/tinyipa-master.gz"
+
+# Specific predefined server in Ironic
 - name: e4-1f-13-e6-3f-42
   cloud_properties:
     macs: ['e4:1f:13:e6:3f:42']
+
+# Pool definition
 - name: pool
   cloud_properties:
     ironic_properties:
       local_gb: 500
       cpus: 16
 
+# Persistent disk /dev/sdc (on each server)
 disk_types:
 - name: default
-  disk_size: 10000
+  disk_size: 1
   cloud_properties:
-    device: /dev/sda
+    device: /dev/sdc
 
+# Two networks, Ironic DHCP pool to deploy and compile packages
+# and static IPs for the jobs
 networks:
 - name: default
   type: manual
@@ -361,14 +371,13 @@ networks:
     cloud_properties:
       macs: ['e4:1f:13:e6:3d:38']
     static:
-      - 10.0.0.248
-      - 10.0.0.249
       - 10.0.0.250
       - 10.0.0.251
-
 - name: compilation
   type: dynamic
 
+# The second server is reserved for compilation purposes, because it boots
+# faster than the others ...
 compilation:
   workers: 1
   reuse_compilation_vms: true
@@ -376,10 +385,15 @@ compilation:
   network: compilation
 ```
 
-The `azs` section is where Availability Zones are defined.
+The sections are documented in https://bosh.io/docs/cloud-config.html , but
+there are `cloud_properties` parameters for some of them which have to be
+explained to understand the Bosh Ironic CPI functionalities.
+
+Take into account that some properties depend on your hardware and Ironic
+settings. Check the Ironic documentation to know more.
 
 
-### `vm_types` section can be used in 3 different ways
+### *vm_types* section can be used in 3 different ways
 
 * **To specifically define a server in Ironic**, such server can be referenced
   in the deployment manifest. You can define as many servers as you need, and,
@@ -393,11 +407,11 @@ The `azs` section is where Availability Zones are defined.
       ironic_params:
         driver: "agent_ipmitool"
         driver_info:
-          ipmi_address: "10.0.0.5"
+          ipmi_address: "10.100.0.5"
           ipmi_username: "admin"
           ipmi_password: "pass"
-          deploy_kernel: "file:///var/lib/ironic/http/deploy/coreos_production_pxe.vmlinuz"
-          deploy_ramdisk: "file:///var/lib/ironic/http/deploy/coreos_production_pxe_image-oem.cpio.gz"
+          deploy_kernel: "file:///var/lib/ironic/http/deploy/ctinyipa-master.vmlinuz"
+          deploy_ramdisk: "file:///var/lib/ironic/http/deploy/tinyipa-master.gz"
   ```
   Two parameters must be defined in cloud properties: **macs** a list of all
   the MAC addresses of the physical server (even if they will not be used,
@@ -451,24 +465,100 @@ The `azs` section is where Availability Zones are defined.
   back to the pool.
 
 
-### `disk_types` section
+### *disk_types* section
 
-disks ....
+Persistent disks are local to the server where it was originally created. There
+is no way to attach a physical disk to a different server (without using
+network tecnologies). If a job uses a persistent disk and a pool of  servers
+is defined, the CPI will select always the server where the disk lives:
+the MAC address of the server is encoded in the disk id, that is how to setup
+the nexus between persistent disk and server.
 
+Because of the combination of how Bosh Agent works and the Config-Drive
+partition created by Ironic driver at the end of the device where the stemcell
+is deployed, Bosh Agent cannot handle ephemeral partitions on the same disk,
+causing that a server needs at least 2 disks: `/dev/sda` for the operating
+system, `/dev/sdb` for ephemeral data like swap and logs. With this mapping,
+the next available disk is `/dev/sdc` (for persistent data):
+
+```
+- name: default
+  disk_size: 1
+  cloud_properties:
+    device: /dev/sdc
+```
+
+The parameter `disk_size` does not make sense here, but it is required. The
+device is already physically attached to the server, and the size is determined
+by its capabilities. The parameter `device` is not required, if it is not
+present, the default value is `/dev/sdc`.
+
+Also, there is a limitation naming the devices. Bosh Agent assumes always
+devices like 'sdX', and when it creates the partitions on the disk, it assumes
+the partitions will be named as `sdX1`, `sdX2` ... if you specify a device like
+`/dev/disk/by-id/scsi....` it will not fit with the partition schema and bosh
+Agent will fail. You have to specify devices with format '/dev/sdX' here. Moreover,
+be aware those devices can point to a different physical devices when the stemcell
+is being deployed vs when the stemcell runs. The kernel used to deploy the
+stemcells can discover the devices in a different order than the kernel of
+the stemcell, so it could happen that the ephemeral device would be `/dev/sda`,
+check the BIOS settings to change the order.
+
+
+### *networks* section
+
+Different networks definition are supported, it is only limited by the
+configuration of network devices (switches, routers, ...) connected to the NICs.
+Usually networks used for compilacion can be `dynamic`, which means the IPs
+will be assigned from the DHCP pool of Ironic (check its configuration).
+
+Example:
+```
+networks:
+- name: default
+  type: manual
+  subnets:
+  - range: 10.0.0.0/24
+    az: dogo
+    name: pxe
+    gateway: 10.0.0.1
+    reserved:
+      - 10.0.0.1-10.0.0.100
+      - 10.0.0.150-10.0.0.255
+    dns: [8.8.8.8]
+    cloud_properties:
+      macs: ['e4:1f:13:e6:3d:38']
+    static:
+      - 10.0.0.250
+      - 10.0.0.251
+- name: compilation
+  type: dynamic
+```
+
+There is only one parameter available for *cloud properties* here: `macs`, a
+list of MACs addresses from different servers which should be used in the present
+network. The list allows to determine which NICs (from the servers) must be
+assigned to each network, in case of a server with multiple NICs and connected
+to multiple networks.
+
+A simple solution to avoid this weird setting could be allow an extra
+parameter in the [*networks* block of the manifest](https://bosh.io/docs/manifest-v2.html#instance-groups)
+to specify the MAC address, or allow the MAC address as a parameter in the
+`networks.default` array (apart of `dns` and `gateway`).
 
 
 ### Defining manually a pool of physical servers
 
-Normally this should be done using Ironic-Inspector, but those are the Ironic
-commands to do it manually. Change the variables and properties according to
-each one:
+Normally this task should be done automatically by Ironic-Inspector, but those
+are the Ironic commands to do it manually. Change the variables and properties
+according to each one:
 
 ```
-############################ lab1
+### lab1
 
 NAME=lab1
-MAC="e4:1f:13:e6:33:3c e4:1f:13:e6:33:3e"
-IPMI=10.10.0.203
+MAC="e4:1f:13:e6:44:6a e4:1f:13:e6:44:6b"
+IPMI=10.100.0.203
 IPMI_USER=admin
 IPMI_PASS=pass
 
@@ -501,11 +591,11 @@ done
 ironic node-set-provision-state "$UUID" manage
 
 
-############################ lab2
+### lab2
 
 NAME=lab2
-MAC="e4:1f:13:e6:d6:d4 e4:1f:13:e6:d6:d6 00:0a:cd:26:f1:79 00:0a:cd:26:f1:7a e6:1f:13:e8:c4:eb"
-IPMI=10.10.0.204
+MAC="e4:1f:13:e6:44:d4 e4:1f:13:e6:44:d6 00:0a:cd:26:44:79 00:0a:cd:26:44:7a e6:1f:13:e8:44:eb"
+IPMI=10.100.0.204
 IPMI_USER=admin
 IPMI_PASS=pass
 
@@ -538,7 +628,7 @@ done
 ironic node-set-provision-state "$UUID" manage
 
 
-############################ List nodes
+### List nodes
 
 ironic node-list
 # +--------------------------------------+--------+--------------------------------------+-------------+--------------------+-------------+
@@ -550,9 +640,12 @@ ironic node-list
 ```
 
 
+
 # Dev environment
 
 Run `bosh_prepare` to download the sources for the packages.
+
+
 
 ## TODO
 
@@ -564,3 +657,11 @@ Run `bosh_prepare` to download the sources for the packages.
 * Include RAID setup in predefined servers
 
 \* Changes in the Bosh Agent are required
+
+
+
+# Author & License
+
+José Riguera López
+
+Apache 2.0
