@@ -661,14 +661,15 @@ ironic node-list
 
 # Dev environment
 
-Run `bosh_prepare` to download the sources for the packages.
-
+Run `./bosh_prepare download` to download the sources of the packages.
+In the `examples` folder there are example manifests to check the jobs with Bosh Lite.
 
 
 ## TODO
 
 * Write code tests
 * Find out how to support bonding on the Stemcells
+* Create specific stemcells for Ironic
 * Support for non defined NICs*
 * Create a specific stemcell for Ironic
 * VLANs support?*
