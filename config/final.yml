@@ -3,3 +3,4 @@ blobstore:
   provider: s3
   options:
     bucket_name: bosh-ironic-cpi-release
+final_name: bosh-ironic-cpi
