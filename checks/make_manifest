@@ -48,22 +48,22 @@ esac
 
 latest_uploaded_stemcell() {
   echo $(bosh stemcells 2>/dev/null | \
-	grep bosh | \
-	grep $STEMCELL_OS | \
-	awk -F'|' '{ print $2, $3 }' | \
-	sort -nr -k2 | \
-	head -n1 | \
-	awk '{ print $1 }')
+    grep bosh | \
+    grep $STEMCELL_OS | \
+    awk -F'|' '{ print $2, $3 }' | \
+    sort -nr -k2 | \
+    head -n1 | \
+    awk '{ print $1 }')
 }
 STEMCELL=${STEMCELL:-$(latest_uploaded_stemcell)}
 if [ "${STEMCELL}x" == "x" ]; then
   echo "Uploading latest $DIRECTOR_CPI/$STEMCELL_OS stemcell..."
   STEMCELL_URL=$(bosh public stemcells --full | \
-	grep $DIRECTOR_CPI | \
-	grep $STEMCELL_OS | \
-	sort -nr | \
-	head -n1 | \
-	awk '{ print $4 }')
+    grep $DIRECTOR_CPI | \
+    grep $STEMCELL_OS | \
+    sort -nr | \
+    head -n1 | \
+    awk '{ print $4 }')
   bosh upload stemcell $STEMCELL_URL
 fi
 STEMCELL=${STEMCELL:-$(latest_uploaded_stemcell)}
@@ -71,14 +71,15 @@ STEMCELL=${STEMCELL:-$(latest_uploaded_stemcell)}
 mkdir -p $tmpdir
 echo $DIRECTOR_NAME $DIRECTOR_CPI $DIRECTOR_UUID $STEMCELL
 sed -e "s/PLACEHOLDER-DIRECTOR-UUID/$DIRECTOR_UUID/g;s/NAME/$NAME/g;s/STEMCELL/$STEMCELL/g" \
-	$templates/stub.yml > $tmpdir/stub-with-uuid.yml
+    $templates/stub.yml > $tmpdir/stub-with-uuid.yml
 
 spruce merge --prune meta \
-	$templates/deployment.yml \
-	$templates/jobs.yml \
-	$templates/infrastructure-${infrastructure}.yml \
-	$tmpdir/stub-with-uuid.yml \
-	$* > $tmpdir/$NAME-manifest.yml
+    $templates/deployment.yml \
+    $templates/jobs.yml \
+    $templates/infrastructure-${infrastructure}.yml \
+    $tmpdir/stub-with-uuid.yml \
+    $* > $tmpdir/$NAME-manifest.yml
 
 bosh deployment $tmpdir/$NAME-manifest.yml
 bosh status
+
