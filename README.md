@@ -215,8 +215,8 @@ releases:
   url: https://bosh.io/d/github.com/cloudfoundry-incubator/bosh-vsphere-cpi-release?v=27
   sha1: 7b9cd2b47138b49cdf9c7329ec6d85324d572743
 - name: bosh-ironic-cpi
-  url: https://github.com/jriguera/bosh-ironic-cpi-release/releases/download/v1/bosh-ironic-cpi-release-1.tgz
-  sha1: 9b5a44903b75fcf31d12d735769dffdc40810248
+  url: https://github.com/jriguera/bosh-ironic-cpi-release/releases/download/v1/bosh-ironic-cpi-1.tgz
+  sha1: 5c361af42a2afcc9cdb9ef1d8a8420eabe7917c1
 ```
 
 Now, add the new jobs to the section `templates` from this release. Only
