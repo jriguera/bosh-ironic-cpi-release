@@ -1,0 +1,166 @@
+---
+name: bosh
+
+releases:
+- name: bosh
+  url: https://bosh.io/d/github.com/cloudfoundry/bosh?v=255.8
+  sha1: 6b12652650b87810dcef1be1f6a6d23f1c0c13a7
+- name: bosh-openstack-cpi
+  url: https://bosh.io/d/github.com/cloudfoundry-incubator/bosh-openstack-cpi-release?v=23
+  sha1: 94fc3b5f72fec737c5ccba223dc5622d8eca4b5d
+- name: ironic_cpi
+  url: https://github.com/jriguera/test/releases/download/v0.1.0/ironic_cpi-0.1.0.tgz
+  sha1: 736e2bd4477ffd21836542e50282fa728cca970a
+
+
+resource_pools:
+- name: vms
+  network: private
+  stemcell:
+    url: https://bosh.io/d/stemcells/bosh-openstack-kvm-ubuntu-trusty-go_agent?v=3215
+    sha1: 6e103aab1c4aa22e48743eb3a5d8c51410fd172f
+  cloud_properties:
+    instance_type: large
+
+
+disk_pools:
+- name: disks
+  disk_size: 20_000
+
+
+networks:
+- name: private
+  type: manual
+  subnets:
+  - range: 10.0.0.0/24 # <--- Replace with a private subnet CIDR
+    gateway: 10.0.0.1 # <--- Replace with a private subnet's gateway
+    dns: [pe-test-osbosh-01.example.com]
+    cloud_properties: {net_id: ce9925cb-0d2c-4dac-a0d0-6e7f1a070649} # <--- # Replace with private network UUID
+- name: public
+  type: vip
+
+
+jobs:
+- name: bosh
+  instances: 1
+
+  templates:
+  - {name: nats, release: bosh}
+  - {name: redis, release: bosh}
+  - {name: postgres, release: bosh}
+  - {name: blobstore, release: bosh}
+  - {name: director, release: bosh}
+  - {name: health_monitor, release: bosh}
+  - {name: ironic_cpi, release: ironic_cpi}
+  - {name: webdav_metadata_registry, release: ironic_cpi}
+
+  resource_pool: vms
+  persistent_disk_pool: disks
+
+  networks:
+  - name: private
+    static_ips: [10.0.0.10] # <--- Replace with a private IP
+    default: [dns, gateway]
+  - name: public
+    static_ips: [10.230.25.103] # <--- Replace with a floating IP
+
+  properties:
+    nats:
+      address: 127.0.0.1
+      user: nats
+      password: nats-password
+
+    redis:
+      listen_address: 127.0.0.1
+      address: 127.0.0.1
+      password: redis-password
+
+    postgres: &db
+      listen_address: 127.0.0.1
+      host: 127.0.0.1
+      user: postgres
+      password: postgres-password
+      database: bosh
+      adapter: postgres
+
+    registry:
+      address: 10.0.0.10 # <--- Replace with a private IP
+      host: 10.0.0.10 # <--- Replace with a private IP
+      db: *db
+      http: {user: admin, password: admin, port: 25777}
+      username: admin
+      password: admin
+      port: 25777
+
+    blobstore:
+      address: 10.0.0.10 # <--- Replace with a private IP
+      port: 25250
+      provider: dav
+      director: 
+        user: director
+        password: director-password
+      agent:
+        user: agent
+        password: agent-password
+
+    director:
+      address: 127.0.0.1
+      name: bosh-ironic
+      db: *db
+      cpi_job: ironic_cpi
+      max_threads: 3
+      user_management:
+        provider: local
+        local:
+          users:
+          - {name: admin, password: admin}
+          - {name: hm, password: hm-password}
+
+    hm:
+      director_account: {user: hm, password: hm-password}
+      resurrector_enabled: true
+
+    ironic_cpi:
+      ironic_url: "http://ironic:6385/"
+      ironic_auth_token: "fake"
+      repository_image_url: "http://ironic/images"
+      repository_metadata_url: "http://ironic/metadata"
+      metadata_publickeys:
+      - "ssh-rsa AAAAB3 ... gGgN1gPZpzSlMBHU+vFLV hola@automation"
+
+    agent:
+      mbus: "nats://nats:nats-password@10.0.0.10:4222"
+
+    ntp: &ntp [0.pool.ntp.org, 1.pool.ntp.org]
+
+
+openstack: &openstack  # <--- Replace with openstack connection settings
+  auth_url: http://X.X.X.X:5000/v3
+  tenant: xxxxxxx
+  username: platform-engineering
+  api_key: XXXXXXX
+  domain: Default
+  project: xxxxxxx
+  default_key_name: bosh
+  default_security_groups: [bosh]
+
+
+cloud_provider:
+  template:
+    name: openstack_cpi
+    release: bosh-openstack-cpi
+
+  ssh_tunnel:
+    host: 10.10.25.103 # <--- Replace with a floating IP
+    port: 22
+    user: vcap
+    private_key: ./bosh.pem # Path relative to this manifest file
+
+  mbus: "https://mbus:mbus-password@10.10.25.103:6868" # <--- Replace with a floating IP
+
+  properties:
+    openstack: *openstack
+    agent: {mbus: "https://mbus:mbus-password@0.0.0.0:6868"}
+    blobstore: {provider: local, path: /var/vcap/micro_bosh/data/cache}
+    ntp: *ntp
+
