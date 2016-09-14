@@ -665,6 +665,24 @@ Run `./bosh_prepare download` to download the sources of the packages.
 In the `examples` folder there are example manifests to check the jobs with Bosh Lite.
 
 
+
+## Known issues
+
+Since Bosh Agent assumes that new disks are always empty and clean (specially the
+ephemeral one), some old versions will fail to deploy because they try to
+create some folders which are there. There are two workarounds for this issue:
+
+* Delete (or overwrite with `dd`) the ephemeral disk manually.
+* Setup Ironic clean steps to automatically delete disks when the node is deleted. This
+is the implemented solution. The clean steps incorporated in the current stable Ironic
+only supports wiping disks and this operation takes a lot of time!. The new version
+adds an additional clean step which only destroys the partitions tables, which is
+faster than wiping the disk (and enough for this purpose). The clean steps can be
+defined in Ironic or in the CPI via configuration parameters. More info:
+http://docs.openstack.org/developer/ironic/deploy/cleaning.html
+
+
+
 ## TODO
 
 * Write code tests
