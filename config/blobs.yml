@@ -1,1 +1,57 @@
---- {}
+---
+zlib/zlib-1.2.8.tar.gz:
+  object_id: 736390fc-aa13-4534-9835-05552d933606
+  sha: a4d316c404ff54ca545ea71a27af7dbc29817088
+  size: 571091
+pip/pip-8.1.2.tar.gz:
+  object_id: 6375a34a-527f-4804-aa8d-06d17853f109
+  sha: 1c13c247967ec5bee6de5fd104c5d78ba30951c7
+  size: 1140573
+genisoimage/cdrkit-1.1.11.tar.gz:
+  object_id: 01342b3b-1748-4773-929c-7b6d27c43087
+  sha: 3f7ddc06db0272942e1a4cd98c3c96462df77387
+  size: 1445133
+setuptools/setuptools-27.2.0.tar.gz:
+  object_id: 395636c0-dafa-400f-a53b-f0d8df56437b
+  sha: 96e4bbe40c860ac9c6ca5ea83a7ccd208718e0ea
+  size: 638181
+nginx-lua/lua-nginx-module-0.10.6.tar.gz:
+  object_id: 7b629f93-ff7c-407b-9e7b-79f7a3c2cabe
+  sha: 8f32f89abe60944f96655bb7646a30748ac41463
+  size: 597217
+nginx-lua/headers-more-nginx-module-0.31.tar.gz:
+  object_id: cacf750c-7c5d-44e5-a014-9d8f4b80b2db
+  sha: e6b8a9645b04a8bf05096c7ddd33176ff528afd9
+  size: 27941
+nginx-lua/nginx-1.10.1.tar.gz:
+  object_id: 0edcc7d0-fc15-4cf4-afce-195da71f9340
+  sha: 9c5d4e06d309bbe2efa41f09dd53912e3c3d3a75
+  size: 909077
+nginx-lua/ngx_devel_kit-0.3.0.tar.gz:
+  object_id: 1f1f6d61-fa20-4fa7-8bfa-ede6e14f9fb8
+  sha: b556d068db23037be30436af559795f45dd93c67
+  size: 66455
+nginx-lua/pcre-8.39.tar.gz:
+  object_id: ea08b237-a35f-4d3e-976e-167ea1a9ba7a
+  sha: b3aec1f643d9701841e2f9d57ac121a7ff448fc8
+  size: 2062258
+openssl/openssl-1.0.2h.tar.gz:
+  object_id: 72675d90-eb82-42cb-9778-7f9a8c9142c4
+  sha: 577585f5f5d299c44dd3c993d3c0ac7a219e4949
+  size: 5274412
+nginx/LuaJIT-2.0.4.tar.gz:
+  object_id: f0a95cfa-0a52-4e94-99f8-50580b6fc9ac
+  sha: 6e533675180300e85d12c4bbeea2d0e41ad21172
+  size: 847615
+bzip2/bzip2-1.0.6.tar.gz:
+  object_id: f7778e32-56ae-48cc-b5ea-94afaeaf0702
+  sha: 3f89f861209ce81a6bab1fd1998c0ef311712002
+  size: 782025
+python/Python-2.7.12.tar.xz:
+  object_id: f3da01fa-543e-4fe8-b38f-ca84e20de2c8
+  sha: 05360b8ade117b35e266b2004a7f1f11250c6dcd
+  size: 12390820
+libyaml/yaml-0.1.7.tar.gz:
+  object_id: e2778269-5324-40da-be76-d808d27d6e9d
+  sha: 3590cbf092ef4c71bc0a9b404c00a626b1e04dee
+  size: 527518
