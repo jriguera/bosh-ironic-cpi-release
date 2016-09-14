@@ -1,0 +1,102 @@
+---
+packages:
+- name: zlib
+  version: 5a0d9aa8f1fd5f03b6409497bc237609662d516c
+  fingerprint: 5a0d9aa8f1fd5f03b6409497bc237609662d516c
+  sha1: ff1fe9430aa48af88735cb61d82d2b9504b86339
+  dependencies: []
+- name: pip
+  version: 16f2c306addd87c679d650e6f6bbad865c44b42e
+  fingerprint: 16f2c306addd87c679d650e6f6bbad865c44b42e
+  sha1: 80b274f56a5d5ceca68e3916f209757ef4850ff1
+  dependencies:
+  - bzip2
+  - libyaml
+  - openssl
+  - python27
+  - setuptools
+  - zlib
+- name: ironic_cpi
+  version: 1cb423f9c5ec38f69a6bac025594520594dda8cb
+  fingerprint: 1cb423f9c5ec38f69a6bac025594520594dda8cb
+  sha1: ddb55abec3f45af0d2517f2de70a2553f3ea25f3
+  dependencies:
+  - bzip2
+  - libyaml
+  - openssl
+  - pip
+  - python27
+  - setuptools
+  - zlib
+- name: genisoimage
+  version: 3b97341a0248456d4a8cc13c7dedf60ed9bf999f
+  fingerprint: 3b97341a0248456d4a8cc13c7dedf60ed9bf999f
+  sha1: 1d4f27e77a28810f0183b4d38026eb6429830cf9
+  dependencies: []
+- name: python27
+  version: b5236de83511cb23cb0140fb5d251ee8781547a5
+  fingerprint: b5236de83511cb23cb0140fb5d251ee8781547a5
+  sha1: 035c6bef025ce8cc14753706bda7abcc0a19b8b6
+  dependencies:
+  - bzip2
+  - openssl
+  - zlib
+- name: setuptools
+  version: 8eca44ad034c08db9aea30e800c41f5988b58fdb
+  fingerprint: 8eca44ad034c08db9aea30e800c41f5988b58fdb
+  sha1: cb3a8f4e6f9682753dd069580a66f76d0a850017
+  dependencies:
+  - openssl
+  - python27
+  - zlib
+- name: nginx-lua
+  version: 02001d241ce69238dceb126ff1e1672ae8376327
+  fingerprint: 02001d241ce69238dceb126ff1e1672ae8376327
+  sha1: 83e8bd897fed723ec620a419ec64b7d44ec4348f
+  dependencies:
+  - luajit
+  - openssl
+  - zlib
+- name: luajit
+  version: 5e484210221d9c0369c466c6d128f9835ce7690c
+  fingerprint: 5e484210221d9c0369c466c6d128f9835ce7690c
+  sha1: b49a96e8defc09383d976ca462f457ca6c4e22db
+  dependencies: []
+- name: openssl
+  version: 844c8360288e6277930553a8221c9053cded0367
+  fingerprint: 844c8360288e6277930553a8221c9053cded0367
+  sha1: ff2d5858fda448110da920a5141f1447a30226fe
+  dependencies:
+  - zlib
+- name: bzip2
+  version: 345a2f7fff524f109c50a3ad78fc95a824a7f903
+  fingerprint: 345a2f7fff524f109c50a3ad78fc95a824a7f903
+  sha1: 578daec3622cc68fe899d9941afb83ca11cc89ab
+  dependencies: []
+- name: dav_registry
+  version: 5041c806149a1fd9007cf954eefa861805d6c3c8
+  fingerprint: 5041c806149a1fd9007cf954eefa861805d6c3c8
+  sha1: 631aa95c434c8f3ca19e692f6a81eb36f8ff2ab9
+  dependencies: []
+- name: libyaml
+  version: eb68afe3d7142581b55410418c642837ac665db9
+  fingerprint: eb68afe3d7142581b55410418c642837ac665db9
+  sha1: 3e914fb5b1daf9eefacfa76613c7dd008c2d8a98
+  dependencies: []
+jobs:
+- name: ironic_cpi
+  version: 3c4140a714c0b52524b87b3bfc9fe1f54dda6d1d
+  fingerprint: 3c4140a714c0b52524b87b3bfc9fe1f54dda6d1d
+  sha1: c6b3722b0b734bff99ea1a7c5090b746c698a826
+- name: webdav_metadata_registry
+  version: 403dd5de6d71863397e002cd3d198702770bda19
+  fingerprint: 403dd5de6d71863397e002cd3d198702770bda19
+  sha1: e4a48b662fa85a1cf9ec83f51398fd81f5ac3bab
+license:
+  version: 068d7540e98ec3bc8a1b437765c2eb9cbdfb2442
+  fingerprint: 068d7540e98ec3bc8a1b437765c2eb9cbdfb2442
+  sha1: 525595d76fbc2fd3e23a72673a9a099d9dd9c012
+commit_hash: d636d895
+uncommitted_changes: true
+name: bosh-ironic-cpi
+version: '1'
