@@ -13,13 +13,13 @@ echo "Extracting NDK ..."
 tar xzvf nginx-lua/ngx_devel_kit-0.3.0.tar.gz
 
 echo "Extracting Lua Nginx module ..."
-tar xzvf nginx-lua/lua-nginx-module-0.10.5.tar.gz
+tar xzvf nginx-lua/lua-nginx-module-0.10.6.tar.gz
 
 echo "Extracting pcre..."
 tar xzvf nginx-lua/pcre-8.39.tar.gz
 
 echo "Extracting headers-more module..."
-tar xzvf nginx-lua/headers-more-nginx-module-0.30.tar.gz
+tar xzvf nginx-lua/headers-more-nginx-module-0.31.tar.gz
 
 echo "Extracting nginx..."
 tar xzvf nginx-lua/nginx-1.10.1.tar.gz
@@ -37,11 +37,11 @@ pushd nginx-1.10.1
     --with-pcre=../pcre-8.39 \
     --with-zlib=${ZLIB_SRC} \
     --with-openssl=${OPENSSL_SRC} \
-    --add-module=../headers-more-nginx-module-0.30 \
+    --add-module=../headers-more-nginx-module-0.31 \
     --with-http_dav_module \
     --with-http_realip_module \
     --add-module=../ngx_devel_kit-0.3.0 \
-    --add-module=../lua-nginx-module-0.10.5 \
+    --add-module=../lua-nginx-module-0.10.6 \
     --with-http_ssl_module
   make
   make install
