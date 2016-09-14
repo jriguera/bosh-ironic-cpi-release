@@ -4,10 +4,10 @@
 set -e -x
 
 echo "Extracting libyaml ... "
-tar xzvf libyaml/yaml-0.1.6.tar.gz
+tar xzvf libyaml/yaml-0.1.7.tar.gz
 
 echo "Building libyaml ... "
-pushd yaml-0.1.6
+pushd yaml-0.1.7
   ./configure --prefix=${BOSH_INSTALL_TARGET}
   make
   make install
