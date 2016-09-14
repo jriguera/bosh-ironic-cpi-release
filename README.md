@@ -286,6 +286,24 @@ platforms in the `checks` folder.
 
 
 
+## Stemcells
+
+The CPI can operate with the OpenStack images, created with those parameters:
+
+* Disk format: **qcow2**
+* container Format: **bare**
+
+```
+bosh upload stemcell https://bosh.io/d/stemcells/bosh-openstack-kvm-ubuntu-trusty-go_agent
+```
+
+Those stemcells are optimized to run in KVM hypervisors, but because the Linux kernel
+includes a lot of device drivers, they should run on most of the common hardware.
+Take into account there is hardware which requires additional drivers or 
+firmware to get it working, in such, case you will have to build your own stemcells.
+
+
+
 ## Cloud-Config setup
 
 Focusing in Bosh v2 style manifests, before starting using the new Bosh Director,
