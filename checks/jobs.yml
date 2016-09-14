@@ -26,11 +26,11 @@ networks: (( param "please set networks" ))
 properties:
   ironic_cpi:
     ironic_url: "http://ironic:6385/"
-    ironic_auth_token: " "
+    ironic_auth_token: "fake"
     repository_stemcell_url: "http://ironic/images"
     repository_metadata_url: "http://ironic/metadata"
-    repository_metadata_publickeys: ["ssh key adfadfa"]
-    repository_metadata_nameservers: ["8.8.8.8", "4.4.4.4"]
+    metadata_publickeys: ["ssh key adfadfa"]
+    metadata_nameservers: ["8.8.8.8", "4.4.4.4"]
   registry:
     host: "*"
     port: 25000
