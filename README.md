@@ -277,7 +277,7 @@ At the same indentation level, define the main CPI configuration properties:
 Change `IRONIC-API` with the IP address or dns name of Ironic API. If you are
 not using Ironic Standalone (so also *webdav_metadata_registry* job), put here
 the IP of the Registry specified in `registry.host` item. `metadata_publickeys`
-is a list of SSH Publics keys which will be incorporated to vcap user in the
+is a list of SSH public keys which will be incorporated to vcap user in the
 servers deployed.
 
 Done!, now just run Bosh-Init: `bosh-init deploy <manifest.yaml>`, it will take
