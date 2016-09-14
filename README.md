@@ -214,8 +214,8 @@ releases:
 - name: bosh-vsphere-cpi
   url: https://bosh.io/d/github.com/cloudfoundry-incubator/bosh-vsphere-cpi-release?v=27
   sha1: 7b9cd2b47138b49cdf9c7329ec6d85324d572743
-- name: ironic_cpi
-  url: https://github.com/jriguera/bosh-ironic-cpi-release/releases/download/v0.1.0/bosh-ironic_cpi-release-0.1.0.tgz
+- name: bosh-ironic-cpi
+  url: https://github.com/jriguera/bosh-ironic-cpi-release/releases/download/v1/bosh-ironic-cpi-release-1.tgz
   sha1: 9b5a44903b75fcf31d12d735769dffdc40810248
 ```
 
@@ -233,8 +233,8 @@ jobs:
   - {name: blobstore, release: bosh}
   - {name: director, release: bosh}
   - {name: health_monitor, release: bosh}
-  - {name: ironic_cpi, release: ironic_cpi}
-  - {name: webdav_metadata_registry, release: ironic_cpi}
+  - {name: ironic_cpi, release: bosh-ironic-cpi}
+  - {name: webdav_metadata_registry, release: bosh-ironic-cpi}
 ```
 
 Remember, job *webdav_metadata_registry* is not needed if you are using
